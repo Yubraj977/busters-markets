@@ -28,8 +28,18 @@ const config: Config = {
         ember: '#E63946',
       },
       fontFamily: {
-        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
-        body:    ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+        display: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', 'sans-serif'],
+        body:    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', 'sans-serif'],
+        sans:    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', 'sans-serif'],
+      },
+      letterSpacing: {
+        tightest: '-0.04em',
+        tighter:  '-0.025em',
+        tight:    '-0.015em',
+        normal:   '0',
+        wide:     '0.01em',
+        wider:    '0.05em',
+        widest:   '0.1em',
       },
       keyframes: {
         float: {
