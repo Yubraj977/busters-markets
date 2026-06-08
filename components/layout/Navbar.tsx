@@ -77,16 +77,13 @@ export default function Navbar() {
       <nav className={`bg-white transition-shadow duration-200 ${scrolled ? 'shadow-md' : 'shadow-sm border-b border-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0 flex items-center gap-2 mr-2">
-            <div className="w-9 h-9 bg-forest-800 rounded-xl flex items-center justify-center">
-              <span className="text-white font-display font-black text-lg leading-none">B</span>
+          <Link href="/" className="flex-shrink-0 flex items-center gap-2.5 mr-2">
+            <div className="w-8 h-8 bg-forest-800 rounded-[10px] flex items-center justify-center">
+              <span className="text-white font-bold text-base leading-none tracking-[-0.03em]">B</span>
             </div>
             <div className="hidden sm:block">
-              <div className="font-display font-bold text-forest-900 text-xl leading-tight tracking-tight">
-                BUSTER'S
-              </div>
-              <div className="text-[9px] font-medium text-forest-600 tracking-widest uppercase -mt-0.5">
-                Markets
+              <div className="text-[1.0625rem] font-semibold text-forest-900 leading-tight tracking-[-0.03em]">
+                Buster's Markets
               </div>
             </div>
           </Link>
@@ -98,9 +95,10 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search for products, brands, or categories…"
-                className="w-full h-10 pl-4 pr-12 rounded-full border-2 border-forest-200 bg-forest-50 text-sm
-                           placeholder:text-gray-400 focus:outline-none focus:border-forest-600 focus:bg-white transition-all"
+                placeholder="Search products, brands, categories…"
+                className="w-full h-[38px] pl-4 pr-11 rounded-full border border-[var(--divider)] bg-[#f5f5f7] text-[0.9375rem]
+                           tracking-[-0.01em] placeholder:text-[var(--tertiary)] focus:outline-none focus:border-forest-400
+                           focus:bg-white transition-all"
               />
               <button
                 type="submit"
@@ -116,23 +114,23 @@ export default function Navbar() {
           <div className="flex items-center gap-1 ml-auto">
             <Link
               href="/account"
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-forest-800
-                         hover:bg-forest-50 transition-colors"
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.875rem] font-medium
+                         text-[var(--foreground)] hover:bg-[#f5f5f7] transition-colors tracking-[-0.01em]"
             >
-              <User size={18} />
-              <span className="hidden lg:inline font-medium">Account</span>
+              <User size={17} />
+              <span className="hidden lg:inline">Account</span>
             </Link>
 
             <button
               onClick={() => setOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-forest-700 hover:bg-forest-800 text-white
-                         rounded-lg transition-colors relative"
+              className="flex items-center gap-2 px-4 py-2 bg-forest-700 hover:bg-forest-800 text-white
+                         rounded-full transition-colors relative text-[0.875rem] font-medium tracking-[-0.01em]"
             >
-              <ShoppingCart size={18} />
-              <span className="hidden sm:inline text-sm font-semibold">Cart</span>
+              <ShoppingCart size={16} />
+              <span className="hidden sm:inline">Cart</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gold text-forest-950 text-[10px]
-                                 font-black rounded-full flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-gold text-forest-950 text-[10px]
+                                 font-bold rounded-full flex items-center justify-center">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -151,9 +149,9 @@ export default function Navbar() {
         <div className="hidden md:block border-t border-gray-100 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
-              <button className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-forest-700
-                                 rounded-b-lg mr-2 whitespace-nowrap hover:bg-forest-800 transition-colors">
-                <Menu size={13} />
+              <button className="flex items-center gap-1.5 px-3 py-2.5 text-[0.75rem] font-medium text-white bg-forest-700
+                                 rounded-b-lg mr-2 whitespace-nowrap hover:bg-forest-800 transition-colors tracking-[-0.01em]">
+                <Menu size={12} />
                 All Departments
                 <ChevronDown size={11} />
               </button>
@@ -161,15 +159,15 @@ export default function Navbar() {
                 <Link
                   key={cat}
                   href={`/products?category=${encodeURIComponent(cat.toLowerCase().replace(/\s+/g, '-'))}`}
-                  className="px-3 py-2.5 text-xs font-medium text-gray-600 hover:text-forest-800 hover:bg-forest-50
-                             whitespace-nowrap transition-colors rounded-b-lg"
+                  className="px-3 py-2.5 text-[0.75rem] font-normal text-[var(--secondary)] hover:text-[var(--foreground)]
+                             whitespace-nowrap transition-colors rounded-b-lg tracking-[-0.005em]"
                 >
                   {cat}
                 </Link>
               ))}
               <Link
                 href="/products?tag=sale"
-                className="ml-auto px-3 py-2.5 text-xs font-bold text-ember whitespace-nowrap hover:text-red-700 transition-colors"
+                className="ml-auto px-3 py-2.5 text-[0.75rem] font-medium text-ember whitespace-nowrap hover:text-red-700 transition-colors tracking-[-0.005em]"
               >
                 🔥 Weekly Deals
               </Link>

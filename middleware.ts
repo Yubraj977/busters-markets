@@ -5,7 +5,8 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Skip auth check if Supabase isn't configured yet
+  // Skip auth c
+  // onfigured yet
   if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
     return NextResponse.next({ request })
   }
