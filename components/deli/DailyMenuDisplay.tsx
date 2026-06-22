@@ -12,6 +12,7 @@ interface MenuItem {
   price: number
   soldOut: boolean
   featured: boolean
+  image?: string
 }
 
 interface Category {
@@ -25,7 +26,7 @@ interface Menu {
   items: MenuItem[]
 }
 
-const POLL_MS = 30_000
+const POLL_MS = 8_000
 
 export default function DailyMenuDisplay() {
   const [menu, setMenu] = useState<Menu>({ categories: [], items: [] })

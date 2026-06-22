@@ -1,40 +1,53 @@
 import { NextResponse } from 'next/server'
-import { readFileSync, writeFileSync } from 'fs'
-import { resolve } from 'path'
+import { createClient } from '@supabase/supabase-js'
 
-const MENU_URL   = process.env.DAILY_MENU_URL ?? 'http://localhost:3000'
-const LOCAL_JSON = resolve(process.cwd(), 'data/deli-menu.json')
+const MENU_URL = process.env.DAILY_MENU_URL ?? 'http://localhost:3000'
 
 export const dynamic = 'force-dynamic'
 
-// ── GET — serve menu (live server → local JSON fallback) ──────────────────
+function supabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// ── GET: live busters-daily → Supabase → empty ────────────────────────────
 export async function GET() {
+  // 1. Try live Roku TV server
   try {
     const res = await fetch(`${MENU_URL}/api/menu`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(3000),
     })
     if (res.ok) return NextResponse.json(await res.json())
-  } catch {
-    // fall through
-  }
+  } catch {}
 
+  // 2. Supabase
   try {
-    return NextResponse.json(JSON.parse(readFileSync(LOCAL_JSON, 'utf-8')))
-  } catch {
-    return NextResponse.json({ categories: [], items: [] })
-  }
+    const { data, error } = await supabase()
+      .from('deli_menu')
+      .select('data')
+      .eq('id', 1)
+      .single()
+    if (!error && data) return NextResponse.json(data.data)
+  } catch {}
+
+  return NextResponse.json({ categories: [], items: [] })
 }
 
-// ── PUT — save menu to local JSON (and forward to live server if reachable) ─
+// ── PUT: save to Supabase + best-effort forward to live server ────────────
 export async function PUT(req: Request) {
   try {
     const body = await req.json()
 
-    // Always write local copy
-    writeFileSync(LOCAL_JSON, JSON.stringify(body, null, 2))
+    const { error } = await supabase()
+      .from('deli_menu')
+      .upsert({ id: 1, data: body, updated_at: new Date().toISOString() })
 
-    // Best-effort forward to busters-daily server
+    if (error) throw error
+
+    // Best-effort forward to busters-daily
     try {
       await fetch(`${MENU_URL}/api/menu`, {
         method: 'PUT',
@@ -42,9 +55,7 @@ export async function PUT(req: Request) {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(3000),
       })
-    } catch {
-      // live server not running — local save is enough
-    }
+    } catch {}
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -24,7 +24,7 @@ interface Settings { storeHours: WeekHours; deliHours: WeekHours }
 interface MenuItem {
   id: string; categoryId: string; order: number
   name: string; description: string; price: number
-  soldOut: boolean; featured: boolean
+  soldOut: boolean; featured: boolean; image?: string
 }
 interface Category { id: string; name: string; order: number }
 interface Menu { categories: Category[]; items: MenuItem[] }
@@ -223,12 +223,12 @@ function DeliSection() {
     if (!confirm(`Delete "${item.name}"?`)) return
     await commit({ ...menu, items: menu.items.filter(i => i.id !== item.id) }); flash('Deleted')
   }
-  const saveNewItem = async (catId: string, data: { name: string; description: string; price: number }) => {
+  const saveNewItem = async (catId: string, data: { name: string; description: string; price: number; image?: string }) => {
     const n = menu.items.filter(i => i.categoryId === catId).length
     await commit({ ...menu, items: [...menu.items, { id: uid(), categoryId: catId, order: n, soldOut: false, featured: false, ...data }] })
     setAddItem(null); flash('Item added')
   }
-  const saveEditItem = async (itemId: string, data: { name: string; description: string; price: number }) => {
+  const saveEditItem = async (itemId: string, data: { name: string; description: string; price: number; image?: string }) => {
     await commit({ ...menu, items: menu.items.map(i => i.id === itemId ? { ...i, ...data } : i) })
     setEditItem(null); flash('Saved')
   }
@@ -421,12 +421,13 @@ function DeliSection() {
 function ItemForm({ initial, onSave, onCancel, mode }: {
   initial?: MenuItem
   mode: 'add' | 'edit'
-  onSave: (data: { name: string; description: string; price: number }) => Promise<void>
+  onSave: (data: { name: string; description: string; price: number; image?: string }) => Promise<void>
   onCancel: () => void
 }) {
   const [name,  setName]  = useState(initial?.name        ?? '')
   const [desc,  setDesc]  = useState(initial?.description ?? '')
   const [price, setPrice] = useState(initial ? String(initial.price) : '')
+  const [image, setImage] = useState(initial?.image ?? '')
   const [busy,  setBusy]  = useState(false)
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => { ref.current?.focus() }, [])
@@ -435,7 +436,7 @@ function ItemForm({ initial, onSave, onCancel, mode }: {
     e.preventDefault()
     if (!name.trim() || !price) return
     setBusy(true)
-    await onSave({ name: name.trim(), description: desc.trim(), price: parseFloat(price) })
+    await onSave({ name: name.trim(), description: desc.trim(), price: parseFloat(price), image: image.trim() || undefined })
     setBusy(false)
   }
 
@@ -452,6 +453,13 @@ function ItemForm({ initial, onSave, onCancel, mode }: {
         <input value={desc} onChange={e => setDesc(e.target.value)}
           placeholder="Description (optional)"
           className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+        <input type="url" value={image} onChange={e => setImage(e.target.value)}
+          placeholder="Photo URL (optional) — paste a link to a food image"
+          className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+        {image && (
+          <img src={image} alt="preview" onError={e => (e.currentTarget.style.display='none')}
+            className="w-full h-28 object-cover rounded-xl border border-[var(--divider)]" />
+        )}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--secondary)]">$</span>
