@@ -18,6 +18,9 @@ export default function Navbar() {
   const router = useRouter()
   const { count, setOpen } = useCartStore()
   const cartCount = count()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -128,7 +131,7 @@ export default function Navbar() {
             >
               <ShoppingCart size={16} />
               <span className="hidden sm:inline">Cart</span>
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-gold text-forest-950 text-[10px]
                                  font-bold rounded-full flex items-center justify-center">
                   {cartCount > 99 ? '99+' : cartCount}
