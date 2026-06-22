@@ -1,0 +1,20 @@
+{
+  "storeHours": {
+    "monday":    { "open": "06:00", "close": "23:00", "closed": false },
+    "tuesday":   { "open": "06:00", "close": "23:00", "closed": false },
+    "wednesday": { "open": "06:00", "close": "23:00", "closed": false },
+    "thursday":  { "open": "06:00", "close": "23:00", "closed": false },
+    "friday":    { "open": "06:00", "close": "23:00", "closed": false },
+    "saturday":  { "open": "07:00", "close": "23:00", "closed": false },
+    "sunday":    { "open": "07:00", "close": "22:00", "closed": false }
+  },
+  "deliHours": {
+    "monday":    { "open": "07:00", "close": "20:00", "closed": false },
+    "tuesday":   { "open": "07:00", "close": "20:00", "closed": false },
+    "wednesday": { "open": "07:00", "close": "20:00", "closed": false },
+    "thursday":  { "open": "07:00", "close": "20:00", "closed": false },
+    "friday":    { "open": "07:00", "close": "20:00", "closed": false },
+    "saturday":  { "open": "08:00", "close": "19:00", "closed": false },
+    "sunday":    { "open": "09:00", "close": "18:00", "closed": false }
+  }
+}

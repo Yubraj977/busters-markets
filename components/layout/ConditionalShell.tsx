@@ -10,8 +10,9 @@ const BOARD_ROUTES = ['/deli/menu']
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const isBoard = BOARD_ROUTES.some(r => path === r)
+  const isAdmin = path.startsWith('/bm-admin')
 
-  if (isBoard) {
+  if (isBoard || isAdmin) {
     return <>{children}</>
   }
 
