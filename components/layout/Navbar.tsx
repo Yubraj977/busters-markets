@@ -166,6 +166,12 @@ export default function Navbar() {
                 </Link>
               ))}
               <Link
+                href="/deli"
+                className="px-3 py-2.5 text-[0.75rem] font-semibold text-forest-700 hover:text-forest-900 whitespace-nowrap transition-colors tracking-[-0.005em]"
+              >
+                🥪 Deli
+              </Link>
+              <Link
                 href="/products?tag=sale"
                 className="ml-auto px-3 py-2.5 text-[0.75rem] font-medium text-ember whitespace-nowrap hover:text-red-700 transition-colors tracking-[-0.005em]"
               >
@@ -190,6 +196,10 @@ export default function Navbar() {
                 {cat}
               </Link>
             ))}
+            <hr className="my-2" />
+            <Link href="/deli" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-forest-700 hover:bg-forest-50">
+              🥪 Deli &amp; Daily Menu
+            </Link>
             <hr className="my-2" />
             <Link href="/account" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-forest-800 hover:bg-forest-50">
               My Account

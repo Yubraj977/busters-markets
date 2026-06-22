@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import CartDrawer from '@/components/layout/CartDrawer'
+import ConditionalShell from '@/components/layout/ConditionalShell'
 
 export const metadata: Metadata = {
   title: { default: "Buster's Markets — Fresh. Local. Delivered.", template: "%s | Buster's Markets" },
@@ -20,10 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={GeistSans.variable}>
       <body className="bg-white text-forest-900 min-h-screen flex flex-col antialiased">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <CartDrawer />
+        <ConditionalShell>{children}</ConditionalShell>
       </body>
     </html>
   )
