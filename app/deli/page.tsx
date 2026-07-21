@@ -158,15 +158,15 @@ export default function DeliPage() {
               </p>
               <div className="space-y-3 mb-6">
                 <a
-                  href="tel:5035550182"
+                  href="tel:5858898570"
                   className="flex items-center gap-3 text-[0.9375rem] text-forest-700 hover:text-forest-900 transition-colors font-medium"
                 >
                   <Phone size={16} />
-                  (503) 555-0182
+                  (585) 889-8570
                 </a>
                 <div className="flex items-start gap-3 text-[0.9375rem] text-[var(--secondary)]">
                   <MapPin size={16} className="flex-shrink-0 mt-0.5 text-[var(--tertiary)]" />
-                  1234 Market St, Portland OR 97201
+                  3892 Scottsville Rd, Scottsville, NY 14546
                 </div>
               </div>
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">

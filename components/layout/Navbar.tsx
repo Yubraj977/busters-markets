@@ -41,15 +41,15 @@ export default function Navbar() {
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5">
               <MapPin size={12} />
-              Store: 1234 Market St, Portland OR
+              Store: 3892 Scottsville Rd, Scottsville, NY
             </span>
             <span className="flex items-center gap-1.5">
               <Phone size={12} />
-              (503) 555-0182
+              (585) 889-8570
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Mon–Sun: 6am – 11pm</span>
+            <span>Mon–Sun: 8am – 8pm</span>
             <Link href="/auth/login" className="hover:text-white transition-colors">Sign In</Link>
             <span className="opacity-40">|</span>
             <Link href="/auth/signup" className="hover:text-white transition-colors">Create Account</Link>

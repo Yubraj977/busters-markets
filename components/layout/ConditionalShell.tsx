@@ -5,7 +5,7 @@ import Navbar from './Navbar'
 import Footer from './Footer'
 import CartDrawer from './CartDrawer'
 
-const BOARD_ROUTES = ['/deli/menu']
+const BOARD_ROUTES = ['/deli/menu', '/notice/board']
 
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
   const path = usePathname()

@@ -135,7 +135,7 @@ export default function CheckoutPage() {
                     type="text"
                     value={delivery_form.city}
                     onChange={e => setDeliveryForm({ ...delivery_form, city: e.target.value })}
-                    placeholder="Portland"
+                    placeholder="Scottsville"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-forest-400 transition-colors"
                   />
                 </div>
@@ -146,7 +146,7 @@ export default function CheckoutPage() {
                     onChange={e => setDeliveryForm({ ...delivery_form, state: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-forest-400 bg-white transition-colors"
                   >
-                    {['OR','WA','CA','ID','NV'].map(s => <option key={s} value={s}>{s}</option>)}
+                    {['NY'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>

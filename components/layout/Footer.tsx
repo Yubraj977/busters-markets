@@ -16,6 +16,7 @@ const links = {
     { label: 'Saved Lists', href: '/account' },
   ],
   Help: [
+    { label: 'Store Update', href: '/notice' },
     { label: 'FAQ', href: '/faq' },
     { label: 'Delivery Info', href: '/delivery' },
     { label: 'Store Locations', href: '/locations' },
@@ -73,9 +74,9 @@ export default function Footer() {
               Bringing you the freshest groceries since 1987. Locally sourced, community focused.
             </p>
             <div className="space-y-2 text-sm">
-              <a href="tel:5035550182" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="tel:5858898570" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone size={14} />
-                (503) 555-0182
+                (585) 889-8570
               </a>
               <a href="mailto:hello@bustersmarkets.com" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Mail size={14} />
@@ -83,7 +84,7 @@ export default function Footer() {
               </a>
               <span className="flex items-center gap-2">
                 <MapPin size={14} />
-                1234 Market St, Portland OR 97201
+                3892 Scottsville Rd, Scottsville, NY 14546
               </span>
             </div>
           </div>
