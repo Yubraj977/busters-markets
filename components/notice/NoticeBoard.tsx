@@ -64,12 +64,12 @@ export default function NoticeBoard() {
         </p>
 
         <h1 style={{ margin: '0 0 28px', fontSize: 76, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.05, color: CREAM }}>
-          We're Currently Fixing<br />Our Coolers
+          We're Currently Fixing<br />Our Cooling System
         </h1>
 
         <p style={{ margin: 0, maxWidth: 780, fontSize: 26, lineHeight: 1.55, color: MUTED }}>
-          Our refrigeration units are down and our team is working to get them back up
-          and running as quickly as possible.
+          Our entire cooling system is down. A specialist technician is on-site working
+          on the repair — it's expected to take up to a week.
         </p>
         <p style={{ margin: '20px 0 0', fontSize: 26, lineHeight: 1.55, color: CREAM, fontWeight: 600 }}>
           Sorry for any inconvenience — thank you for your patience!

@@ -2,7 +2,7 @@ import { AlertTriangle, Clock, Phone, MapPin, Tv } from 'lucide-react'
 
 const affected = [
   { emoji: '🥛', title: 'Dairy & Eggs', desc: 'Cases are running warm — we\'ve pulled anything that isn\'t holding temperature.' },
-  { emoji: '🧊', title: 'Frozen', desc: 'Some frozen sections may be limited while we work on the coolers.' },
+  { emoji: '🧊', title: 'Frozen', desc: 'Some frozen sections may be limited while the cooling system is repaired.' },
   { emoji: '🥩', title: 'Meat & Seafood', desc: 'Fresh cases are being monitored closely and restocked as needed.' },
 ]
 
@@ -42,11 +42,12 @@ export default function NoticePage() {
                 lineHeight: 1.0,
               }}
             >
-              We're Currently<br />Fixing Our Coolers
+              We're Currently<br />Fixing Our Cooling System
             </h1>
             <p className="mb-8 max-w-xl" style={{ color: '#d4b295', fontSize: '1.125rem', lineHeight: 1.6 }}>
-              Our refrigeration units are down and our team is working to get them back up and running
-              as quickly as possible. We're sorry for any inconvenience — thank you for your patience.
+              Our entire cooling system is down. A specialist technician is on-site working on the repair —
+              it's expected to take up to a week to get everything back up and running.
+              We're sorry for any inconvenience — thank you for your patience.
             </p>
             <div className="flex flex-wrap gap-3">
               <a
