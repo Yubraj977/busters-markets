@@ -79,7 +79,7 @@ export default function NoticeBoard() {
       {/* Footer */}
       <div style={{ borderTop: '1px solid #3a281a', padding: '22px 80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <p style={{ margin: 0, fontSize: 14, color: MUTED, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-          The Deli, Pantry, and Checkout are open as usual
+          We've brought in temporary coolers for the most common items
         </p>
         <p style={{ margin: 0, fontSize: 14, color: MUTED, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
           Buster's Markets · (585) 889-8570

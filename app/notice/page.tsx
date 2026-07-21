@@ -6,10 +6,10 @@ const affected = [
   { emoji: '🥩', title: 'Meat & Seafood', desc: 'Fresh cases are being monitored closely and restocked as needed.' },
 ]
 
-const stillOpen = [
-  { emoji: '🥪', title: 'The Deli', desc: 'Fully open — sandwiches, hot foods, and daily specials as usual.' },
-  { emoji: '🥫', title: 'Pantry & Dry Goods', desc: 'Unaffected — shop normally.' },
-  { emoji: '🛒', title: 'Checkout & Pickup', desc: 'Open as usual, no delays expected.' },
+const tempCoolers = [
+  { emoji: '🧊', title: 'Temporary Coolers', desc: 'We\'ve brought in temporary coolers to keep the most common items cold and available.' },
+  { emoji: '🥛', title: 'Everyday Essentials', desc: 'Milk, eggs, and other high-demand items are being prioritized in the temp units.' },
+  { emoji: '👋', title: 'Ask In-Store', desc: 'Not sure if something\'s available? Ask a team member — we\'re happy to check.' },
 ]
 
 export default function NoticePage() {
@@ -102,10 +102,10 @@ export default function NoticePage() {
           </div>
 
           <div>
-            <p className="type-caption text-forest-600 mb-3">Business as usual</p>
-            <h2 className="type-headline text-[#1d1d1f] mb-6">Still Open</h2>
+            <p className="type-caption text-forest-600 mb-3">In the meantime</p>
+            <h2 className="type-headline text-[#1d1d1f] mb-6">What We're Doing</h2>
             <div className="space-y-3">
-              {stillOpen.map(s => (
+              {tempCoolers.map(s => (
                 <div key={s.title} className="flex items-start gap-4 p-4 bg-[#fafaf7] border border-[var(--divider)] rounded-2xl">
                   <div className="text-2xl flex-shrink-0">{s.emoji}</div>
                   <div>
