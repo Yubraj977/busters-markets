@@ -93,6 +93,14 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     isSale: onSale,
     brand: item.brand || undefined,
     sku: item.sku,
+    barcode: item.barcode || undefined,
+    plu: item.plu || undefined,
+    department: item.department || undefined,
+    depositAmount: item.depositAmount ?? undefined,
+    taxable: item.taxable,
+    ebtEligible: item.ebtEligible,
+    ageRestricted: item.ageRestricted,
+    isWeighed: item.isWeighed,
   }
 }
 

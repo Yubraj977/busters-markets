@@ -4,7 +4,6 @@ import { useState, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { SlidersHorizontal, X, ChevronDown, Grid3X3, List } from 'lucide-react'
 import ProductCard from '@/components/products/ProductCard'
-import { categories } from '@/lib/mock-data'
 import { Product } from '@/lib/types'
 import { clsx } from 'clsx'
 
@@ -71,6 +70,11 @@ function ProductsContent({ products }: { products: Product[] }) {
     return result
   }, [products, q, selectedCategory, selectedPriceRange, showOrganic, showOnSale, sortBy])
 
+  const liveCategories = useMemo(
+    () => Array.from(new Set(products.map(p => p.category))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  )
+
   const activeFilterCount = [
     selectedCategory, selectedPriceRange !== null, showOrganic, showOnSale
   ].filter(Boolean).length
@@ -96,18 +100,17 @@ function ProductsContent({ products }: { products: Product[] }) {
           >
             All Categories
           </button>
-          {categories.map(cat => (
+          {liveCategories.map(cat => (
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(selectedCategory === cat.slug ? '' : cat.slug)}
-              className={clsx('w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2',
-                selectedCategory === cat.slug
+              key={cat}
+              onClick={() => setSelectedCategory(selectedCategory === cat ? '' : cat)}
+              className={clsx('w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors capitalize',
+                selectedCategory === cat
                   ? 'bg-forest-700 text-white font-semibold'
                   : 'text-gray-600 hover:bg-forest-50'
               )}
             >
-              <span>{cat.icon}</span>
-              {cat.name}
+              {cat}
             </button>
           ))}
         </div>
@@ -175,7 +178,7 @@ function ProductsContent({ products }: { products: Product[] }) {
       <div className="mb-6">
         <h1 className="font-display font-bold text-3xl text-forest-900">
           {q ? `Results for "${q}"` : selectedCategory
-            ? categories.find(c => c.slug === selectedCategory)?.name ?? 'Products'
+            ? selectedCategory
             : showOnSale ? '🔥 Weekly Deals' : 'All Products'}
         </h1>
         <p className="text-sm text-gray-500 mt-1">{filtered.length} products found</p>

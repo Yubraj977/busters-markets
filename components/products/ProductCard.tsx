@@ -99,19 +99,21 @@ export default function ProductCard({ product, compact = false }: Props) {
         <p className="text-xs text-gray-400 mt-0.5">{product.unit}</p>
 
         {/* Rating */}
-        <div className="flex items-center gap-1 mt-1">
-          <div className="flex text-amber-400">
-            {[1,2,3,4,5].map(s => (
-              <Star
-                key={s}
-                size={11}
-                fill={s <= Math.round(product.rating) ? 'currentColor' : 'none'}
-                className={s <= Math.round(product.rating) ? 'text-amber-400' : 'text-gray-200'}
-              />
-            ))}
+        {product.reviewCount > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <div className="flex text-amber-400">
+              {[1,2,3,4,5].map(s => (
+                <Star
+                  key={s}
+                  size={11}
+                  fill={s <= Math.round(product.rating) ? 'currentColor' : 'none'}
+                  className={s <= Math.round(product.rating) ? 'text-amber-400' : 'text-gray-200'}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-gray-400">({product.reviewCount.toLocaleString()})</span>
           </div>
-          <span className="text-[10px] text-gray-400">({product.reviewCount.toLocaleString()})</span>
-        </div>
+        )}
 
         {/* Price + Add to cart */}
         <div className="flex items-end justify-between mt-auto pt-2">

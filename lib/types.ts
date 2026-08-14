@@ -21,6 +21,14 @@ export interface Product {
   sku?: string
   weight?: string
   origin?: string
+  barcode?: string
+  plu?: string
+  department?: string
+  depositAmount?: number
+  taxable?: boolean
+  ebtEligible?: boolean
+  ageRestricted?: boolean
+  isWeighed?: boolean
 }
 
 export interface CartItem {

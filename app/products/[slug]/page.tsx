@@ -61,14 +61,16 @@ export default async function ProductPage({ params }: Props) {
             {product.name}
           </h1>
 
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex text-amber-400">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} size={14} fill={s <= Math.round(product.rating) ? 'currentColor' : 'none'} />
-              ))}
+          {product.reviewCount > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex text-amber-400">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} size={14} fill={s <= Math.round(product.rating) ? 'currentColor' : 'none'} />
+                ))}
+              </div>
+              <span className="text-sm text-gray-500">{product.rating} ({product.reviewCount.toLocaleString()} reviews)</span>
             </div>
-            <span className="text-sm text-gray-500">{product.rating} ({product.reviewCount.toLocaleString()} reviews)</span>
-          </div>
+          )}
 
           <div className="flex items-baseline gap-3 mb-4">
             <span className="text-4xl font-black text-forest-900">${product.price.toFixed(2)}</span>
@@ -78,16 +80,20 @@ export default async function ProductPage({ params }: Props) {
             )}
           </div>
 
-          <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
+          {product.description && (
+            <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
+          )}
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {product.tags.map(tag => (
-              <span key={tag} className="bg-forest-50 text-forest-700 text-xs font-medium px-3 py-1 rounded-full capitalize">
-                {tag.replace(/-/g, ' ')}
-              </span>
-            ))}
-          </div>
+          {product.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {product.tags.map(tag => (
+                <span key={tag} className="bg-forest-50 text-forest-700 text-xs font-medium px-3 py-1 rounded-full capitalize">
+                  {tag.replace(/-/g, ' ')}
+                </span>
+              ))}
+            </div>
+          )}
 
           <AddToCartButton product={product} />
 
@@ -103,6 +109,63 @@ export default async function ProductPage({ params }: Props) {
                 <span className="text-xs text-gray-500">{text}</span>
               </div>
             ))}
+          </div>
+
+          {/* Product info */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <h2 className="text-sm font-bold text-forest-900 mb-3">Product Details</h2>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dt className="text-gray-500">SKU</dt>
+              <dd className="text-forest-900 font-mono text-xs">{product.sku}</dd>
+
+              {product.barcode && (
+                <>
+                  <dt className="text-gray-500">Barcode</dt>
+                  <dd className="text-forest-900 font-mono text-xs">{product.barcode}</dd>
+                </>
+              )}
+
+              {product.plu && (
+                <>
+                  <dt className="text-gray-500">PLU</dt>
+                  <dd className="text-forest-900 font-mono text-xs">{product.plu}</dd>
+                </>
+              )}
+
+              {product.department && (
+                <>
+                  <dt className="text-gray-500">Department</dt>
+                  <dd className="text-forest-900">{product.department}</dd>
+                </>
+              )}
+
+              <dt className="text-gray-500">Unit</dt>
+              <dd className="text-forest-900">{product.unit}</dd>
+
+              {typeof product.depositAmount === 'number' && product.depositAmount > 0 && (
+                <>
+                  <dt className="text-gray-500">Deposit</dt>
+                  <dd className="text-forest-900">${product.depositAmount.toFixed(2)}</dd>
+                </>
+              )}
+            </dl>
+
+            {(product.taxable || product.ebtEligible || product.ageRestricted || product.isWeighed) && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {product.taxable && (
+                  <span className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">Taxable</span>
+                )}
+                {product.ebtEligible && (
+                  <span className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">EBT Eligible</span>
+                )}
+                {product.ageRestricted && (
+                  <span className="bg-red-50 text-red-700 text-xs font-medium px-2.5 py-1 rounded-full">21+ Age Restricted</span>
+                )}
+                {product.isWeighed && (
+                  <span className="bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full">Sold by Weight</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
