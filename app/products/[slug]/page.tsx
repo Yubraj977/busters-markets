@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Star, Leaf, ShieldCheck, Truck } from 'lucide-react'
-import { products } from '@/lib/mock-data'
+import { getBackofficeProducts } from '@/lib/backoffice'
 import AddToCartButton from '@/components/products/AddToCartButton'
+
+export const dynamic = 'force-dynamic'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -11,6 +13,7 @@ interface Props {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params
+  const products = await getBackofficeProducts()
   const product = products.find(p => p.slug === slug)
 
   if (!product) notFound()
@@ -129,8 +132,4 @@ export default async function ProductPage({ params }: Props) {
       )}
     </div>
   )
-}
-
-export function generateStaticParams() {
-  return products.map(p => ({ slug: p.slug }))
 }

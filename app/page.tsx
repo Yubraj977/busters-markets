@@ -3,7 +3,8 @@ import Image from 'next/image'
 import { ArrowRight, Truck, ShieldCheck, Leaf, Clock, Star } from 'lucide-react'
 import ProductCard from '@/components/products/ProductCard'
 import HeroSearch from '@/components/home/HeroSearch'
-import { products, categories, weeklyDeals } from '@/lib/mock-data'
+import { categories } from '@/lib/mock-data'
+import { getBackofficeProducts } from '@/lib/backoffice'
 
 const perks = [
   { icon: Truck,       label: 'Free Delivery',    sub: 'On orders over $35'       },
@@ -27,8 +28,12 @@ const stats = [
   { value: '500+',  label: 'Local products' },
 ]
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  const products = await getBackofficeProducts()
   const featured = products.slice(0, 8)
+  const weeklyDeals = products.filter(p => p.isSale).slice(0, 4)
 
   return (
     <>
