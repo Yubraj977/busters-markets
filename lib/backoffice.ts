@@ -9,6 +9,7 @@ export interface BackofficeInventoryItem {
   department: string | null
   category: string | null
   imageUrl: string | null
+  images?: string[]
   price: number
   salePrice: number | null
   saleStartsAt: string | null
@@ -64,11 +65,12 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     (!item.saleEndsAt || new Date(item.saleEndsAt) >= now)
 
   const baseUrl = process.env.BACKOFFICE_API_URL ?? ''
+  const toAbsolute = (url: string) => (url.startsWith('http') ? url : `${baseUrl}${url}`)
+
+  const images = (item.images ?? []).filter(Boolean).map(toAbsolute)
   const image = item.imageUrl
-    ? item.imageUrl.startsWith('http')
-      ? item.imageUrl
-      : `${baseUrl}${item.imageUrl}`
-    : '/placeholder-product.svg'
+    ? toAbsolute(item.imageUrl)
+    : images[0] ?? '/placeholder-product.svg'
 
   const tags = [
     item.ebtEligible && 'ebt-eligible',
@@ -86,6 +88,7 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     unit: item.unit,
     category: item.category || item.department || 'uncategorized',
     image,
+    images: images.length > 0 ? images : undefined,
     inStock: item.quantityOnHand > 0,
     rating: 0,
     reviewCount: 0,

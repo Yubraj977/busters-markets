@@ -77,7 +77,7 @@ export default function CartDrawer() {
                     alt={product.name}
                     width={64}
                     height={64}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-1"
                   />
                 </div>
                 <div className="flex-1 min-w-0">

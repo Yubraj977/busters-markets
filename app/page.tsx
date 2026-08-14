@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { ArrowRight, Truck, ShieldCheck, Leaf, Clock, Star } from 'lucide-react'
 import ProductCard from '@/components/products/ProductCard'
 import HeroSearch from '@/components/home/HeroSearch'
-import { categories } from '@/lib/mock-data'
 import { getBackofficeProducts } from '@/lib/backoffice'
 
 const perks = [
@@ -13,14 +12,26 @@ const perks = [
   { icon: Clock,       label: 'Same-Day Pickup',   sub: 'Ready in 2 hours'         },
 ]
 
-const quickCategories = [
-  { label: 'Produce',    slug: 'produce',   emoji: '🥦' },
-  { label: 'Meat',       slug: 'meat',      emoji: '🥩' },
-  { label: 'Dairy',      slug: 'dairy',     emoji: '🥛' },
-  { label: 'Bakery',     slug: 'bakery',    emoji: '🍞' },
-  { label: 'Frozen',     slug: 'frozen',    emoji: '❄️'  },
-  { label: 'Beverages',  slug: 'beverages', emoji: '🧃' },
+const CATEGORY_ICON_RULES: [RegExp, string][] = [
+  [/beer|cider|fmb|malt/i, '🍺'],
+  [/wine/i, '🍷'],
+  [/soda|beverage|drink|juice|water/i, '🥤'],
+  [/produce|fruit|vegetable/i, '🥦'],
+  [/dairy|milk|cheese|egg/i, '🧀'],
+  [/meat|seafood|poultry/i, '🥩'],
+  [/bakery|bread/i, '🍞'],
+  [/frozen/i, '🧊'],
+  [/snack|chip/i, '🥨'],
+  [/coffee|tea/i, '☕'],
+  [/candy|snack cake|cookie/i, '🍪'],
+  [/household|clean/i, '🧹'],
+  [/personal care|health/i, '🪥'],
 ]
+
+function categoryIcon(name: string): string {
+  const rule = CATEGORY_ICON_RULES.find(([pattern]) => pattern.test(name))
+  return rule ? rule[1] : '🛒'
+}
 
 const stats = [
   { value: '50k+', label: 'Happy customers' },
@@ -34,6 +45,14 @@ export default async function HomePage() {
   const products = await getBackofficeProducts()
   const featured = products.slice(0, 8)
   const weeklyDeals = products.filter(p => p.isSale).slice(0, 4)
+
+  const categoryCounts = new Map<string, number>()
+  for (const p of products) {
+    categoryCounts.set(p.category, (categoryCounts.get(p.category) ?? 0) + 1)
+  }
+  const liveCategories = Array.from(categoryCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+  const quickCategories = liveCategories.slice(0, 6)
 
   return (
     <>
@@ -87,21 +106,23 @@ export default async function HomePage() {
               </div>
 
               {/* Quick category chips — neutral gray */}
-              <div className="flex flex-wrap gap-2 mb-10">
-                {quickCategories.map(({ label, slug, emoji }) => (
-                  <Link
-                    key={slug}
-                    href={`/products?category=${slug}`}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5
-                               bg-white hover:bg-[#f5f5f7] border border-[#d2d2d7]
-                               text-[#3a3a3c] text-[0.8125rem] font-medium
-                               rounded-full transition-all tracking-[-0.005em] shadow-sm"
-                  >
-                    <span>{emoji}</span>
-                    {label}
-                  </Link>
-                ))}
-              </div>
+              {quickCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-10">
+                  {quickCategories.map(([name]) => (
+                    <Link
+                      key={name}
+                      href={`/products?category=${encodeURIComponent(name)}`}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5
+                                 bg-white hover:bg-[#f5f5f7] border border-[#d2d2d7]
+                                 text-[#3a3a3c] text-[0.8125rem] font-medium
+                                 rounded-full transition-all tracking-[-0.005em] shadow-sm capitalize"
+                    >
+                      <span>{categoryIcon(name)}</span>
+                      {name}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {/* Stats row */}
               <div className="flex items-center gap-8 pt-2 border-t border-[#e5e4de]">
@@ -246,26 +267,31 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
-          {categories.map(cat => (
-            <Link
-              key={cat.id}
-              href={`/products?category=${cat.slug}`}
-              className="group flex flex-col items-center gap-2 p-3 rounded-2xl
-                         hover:bg-forest-50 transition-colors text-center"
-            >
-              <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl shadow-sm border border-[var(--divider)]
-                              flex items-center justify-center text-2xl md:text-3xl
-                              group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
-                {cat.icon}
-              </div>
-              <span className="text-[0.6875rem] md:text-[0.75rem] font-medium text-[var(--secondary)]
-                               leading-tight group-hover:text-[#1d1d1f] transition-colors">
-                {cat.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+        {liveCategories.length > 0 ? (
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+            {liveCategories.map(([name, count]) => (
+              <Link
+                key={name}
+                href={`/products?category=${encodeURIComponent(name)}`}
+                className="group flex flex-col items-center gap-2 p-3 rounded-2xl
+                           hover:bg-forest-50 transition-colors text-center"
+              >
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl shadow-sm border border-[var(--divider)]
+                                flex items-center justify-center text-2xl md:text-3xl
+                                group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
+                  {categoryIcon(name)}
+                </div>
+                <span className="text-[0.6875rem] md:text-[0.75rem] font-medium text-[var(--secondary)]
+                                 leading-tight group-hover:text-[#1d1d1f] transition-colors capitalize">
+                  {name}
+                </span>
+                <span className="text-[0.625rem] text-gray-400">{count}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No categories yet.</p>
+        )}
       </section>
 
       {/* ══════════════════════════ WEEKLY DEALS ══════════════════════════ */}
