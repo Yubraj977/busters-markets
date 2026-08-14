@@ -86,7 +86,7 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     price: onSale ? item.salePrice! : item.price,
     comparePrice: onSale ? item.price : undefined,
     unit: item.unit,
-    category: item.category || item.department || 'uncategorized',
+    category: item.department || 'uncategorized',
     image,
     images: images.length > 0 ? images : undefined,
     inStock: item.quantityOnHand > 0,
