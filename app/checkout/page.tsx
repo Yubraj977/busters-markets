@@ -257,7 +257,7 @@ export default function CheckoutPage() {
                 {items.map(({ product, quantity }) => (
                   <div key={product.id} className="flex gap-3 items-center">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-forest-50 flex-shrink-0">
-                      <Image src={product.image} alt={product.name} width={48} height={48} className="object-contain w-full h-full p-1" />
+                      <Image src={product.image} alt={product.name} width={48} height={48} unoptimized={product.imageOptimizable === false} className="object-contain w-full h-full p-1" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-forest-900 leading-tight">{product.name}</p>

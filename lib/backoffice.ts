@@ -47,6 +47,24 @@ export async function getBackofficeInventory(): Promise<BackofficeInventoryItem[
   return data.items ?? []
 }
 
+// Keep in sync with the remotePatterns allowlist in next.config.ts.
+// Anything outside this list (bulk-imported produce photos hotlinked from
+// random third-party sites) can't go through next/image's optimizer, so we
+// render those with `unoptimized` instead of a broken image.
+const OPTIMIZABLE_IMAGE_HOSTS = [/(^|\.)supabase\.co$/, /(^|\.)ngrok-free\.dev$/, /(^|\.)ngrok\.io$/]
+
+function isOptimizableImage(url: string): boolean {
+  if (url.startsWith('/')) return true
+  try {
+    const { hostname, protocol } = new URL(url)
+    if (protocol !== 'https:') return false
+    if (hostname === 'images.unsplash.com') return true
+    return OPTIMIZABLE_IMAGE_HOSTS.some(pattern => pattern.test(hostname))
+  } catch {
+    return false
+  }
+}
+
 function slugify(value: string): string {
   return (
     value
@@ -89,6 +107,7 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     category: item.department || 'uncategorized',
     image,
     images: images.length > 0 ? images : undefined,
+    imageOptimizable: isOptimizableImage(image),
     inStock: item.quantityOnHand > 0,
     rating: 0,
     reviewCount: 0,

@@ -77,6 +77,7 @@ export default function CartDrawer() {
                     alt={product.name}
                     width={64}
                     height={64}
+                    unoptimized={product.imageOptimizable === false}
                     className="w-full h-full object-contain p-1"
                   />
                 </div>

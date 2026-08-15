@@ -36,6 +36,7 @@ export default async function ProductPage({ params }: Props) {
             src={product.image}
             alt={product.name}
             fill
+            unoptimized={product.imageOptimizable === false}
             sizes="(max-width: 768px) 100vw, 50vw"
             className="object-contain p-8"
             priority
@@ -182,7 +183,7 @@ export default async function ProductPage({ params }: Props) {
                 className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-forest-200 hover:shadow-md transition-all"
               >
                 <div className="relative h-32 bg-forest-50">
-                  <Image src={p.image} alt={p.name} fill className="object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
+                  <Image src={p.image} alt={p.name} fill unoptimized={p.imageOptimizable === false} className="object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-semibold text-forest-900 line-clamp-2 leading-tight">{p.name}</p>

@@ -10,6 +10,7 @@ export interface Product {
   subcategory?: string
   image: string
   images?: string[]
+  imageOptimizable?: boolean
   inStock: boolean
   rating: number
   reviewCount: number
