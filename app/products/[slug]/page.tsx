@@ -13,7 +13,12 @@ interface Props {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params
-  const products = await getBackofficeProducts()
+  let products: Awaited<ReturnType<typeof getBackofficeProducts>> = []
+  try {
+    products = await getBackofficeProducts()
+  } catch {
+    // Backoffice tunnel unreachable — fall through to notFound() below.
+  }
   const product = products.find(p => p.slug === slug)
 
   if (!product) notFound()

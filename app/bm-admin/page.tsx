@@ -99,13 +99,13 @@ export default function AdminPage() {
           <input
             type="password" placeholder="Password" value={pw} autoFocus
             onChange={e => { setPw(e.target.value); setPwErr('') }}
-            className="w-full px-4 py-4 rounded-2xl text-white text-[1.0625rem]
+            className="w-full px-4 py-3 rounded-xl text-white text-[0.9375rem]
                        focus:outline-none focus:ring-2 focus:ring-[#2d6a30]"
             style={{ background: '#162019', border: '1px solid #1e3022' }}
           />
           {pwErr && <p className="text-red-400 text-sm text-center">{pwErr}</p>}
           <button type="submit"
-            className="w-full py-4 rounded-2xl font-bold text-white text-[1.0625rem] transition-colors active:scale-[0.98]"
+            className="w-full py-3 rounded-xl font-semibold text-white text-[0.9375rem] transition-colors active:scale-[0.98]"
             style={{ background: '#1e4023' }}>
             Sign In
           </button>
@@ -203,10 +203,19 @@ function TasksSection() {
   const [newNotes, setNewNotes] = useState('')
   const [adding,   setAdding]   = useState(false)
   const [toast,    setToast]    = useState<string | null>(null)
+  const [loadErr,  setLoadErr]  = useState<string | null>(null)
+
+  const load = () => {
+    setLoadErr(null)
+    fetch('/api/todos')
+      .then(r => r.json())
+      .then(setTodos)
+      .catch(() => setLoadErr('Could not load tasks. Check your connection and try again.'))
+  }
 
   useEffect(() => {
     setName(localStorage.getItem(NAME_KEY) ?? '')
-    fetch('/api/todos').then(r => r.json()).then(setTodos)
+    load()
   }, [])
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000) }
@@ -272,6 +281,15 @@ function TasksSection() {
     flash('Deleted')
   }
 
+  if (loadErr) return (
+    <div className="text-center py-16">
+      <p className="text-[var(--secondary)] mb-3">{loadErr}</p>
+      <button onClick={load} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#1a2e1c' }}>
+        Retry
+      </button>
+    </div>
+  )
+
   if (todos === null) return <div className="text-center py-16 text-[var(--secondary)]">Loading tasks…</div>
 
   const open    = todos.filter(t => t.status === 'open')
@@ -301,29 +319,29 @@ function TasksSection() {
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-semibold active:scale-95 transition-transform flex-shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-[0.8125rem] font-medium active:scale-95 transition-transform flex-shrink-0"
             style={{ background: '#1a2e1c' }}>
-            <Plus size={15} /> Add Task
+            <Plus size={13} /> Add Task
           </button>
         )}
       </div>
 
       {adding && (
-        <div className="mb-4 p-4 bg-white rounded-2xl border border-[var(--divider)] shadow-sm">
+        <div className="mb-4 p-3.5 bg-white rounded-xl border border-[var(--divider)] shadow-sm">
           <form onSubmit={addTask} className="flex flex-col gap-2">
             <input autoFocus value={newTitle} onChange={e => setNewTitle(e.target.value)}
               placeholder="What needs to be done? (e.g. Restock dairy cooler)" required
-              className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
             <input value={newNotes} onChange={e => setNewNotes(e.target.value)}
               placeholder="Notes (optional)"
-              className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
             <div className="flex gap-2">
               <button type="submit"
-                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-white text-sm font-semibold" style={{ background: '#1a2e1c' }}>
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-white text-[0.8125rem] font-medium" style={{ background: '#1a2e1c' }}>
                 Add
               </button>
               <button type="button" onClick={() => { setAdding(false); setNewTitle(''); setNewNotes('') }}
-                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-sm text-[var(--secondary)] bg-[#f5f5f7]">
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[0.8125rem] text-[var(--secondary)] bg-[#f5f5f7]">
                 Cancel
               </button>
             </div>
@@ -338,7 +356,7 @@ function TasksSection() {
             onDelete={() => removeTask(todo)}
             actions={
               <button onClick={() => pickUp(todo)}
-                className="w-full py-3 rounded-xl text-[0.875rem] font-bold text-white active:scale-95 transition-all"
+                className="w-full py-2.5 rounded-lg text-[0.8125rem] font-medium text-white active:scale-95 transition-all"
                 style={{ background: '#1e4023' }}>
                 Pick this up
               </button>
@@ -355,13 +373,13 @@ function TasksSection() {
             actions={
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => release(todo)}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl text-[0.875rem] font-bold border border-[var(--divider)] text-[var(--secondary)] bg-white active:scale-95 transition-all">
-                  <Undo2 size={14} /> Release
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[0.8125rem] font-medium border border-[var(--divider)] text-[var(--secondary)] bg-white active:scale-95 transition-all">
+                  <Undo2 size={13} /> Release
                 </button>
                 <button onClick={() => markDone(todo)}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl text-[0.875rem] font-bold text-white active:scale-95 transition-all"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[0.8125rem] font-medium text-white active:scale-95 transition-all"
                   style={{ background: '#1e4023' }}>
-                  <Check size={14} /> Mark done
+                  <Check size={13} /> Mark done
                 </button>
               </div>
             } />
@@ -377,7 +395,7 @@ function TasksSection() {
               onDelete={() => removeTask(todo)}
               actions={
                 <button onClick={() => reopen(todo)}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-[0.8125rem] font-semibold text-[var(--secondary)] bg-[#f5f5f7] active:scale-95 transition-all">
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-medium text-[var(--secondary)] bg-[#f5f5f7] active:scale-95 transition-all">
                   <Undo2 size={13} /> Reopen
                 </button>
               } />
@@ -408,7 +426,7 @@ function TaskGroup({ label, count, children }: { label: string; count: number; c
 
 function EmptyRow({ text }: { text: string }) {
   return (
-    <div className="text-center py-8 text-[0.875rem] text-[var(--tertiary)] bg-white rounded-2xl border border-dashed border-[var(--divider)]">
+    <div className="text-center py-8 text-[0.875rem] text-[var(--tertiary)] bg-white rounded-xl border border-dashed border-[var(--divider)]">
       {text}
     </div>
   )
@@ -418,10 +436,10 @@ function TaskRow({ todo, actions, onDelete, dimmed }: {
   todo: Todo; actions: React.ReactNode; onDelete: () => void; dimmed?: boolean
 }) {
   return (
-    <div className={`bg-white rounded-2xl border border-[var(--divider)] shadow-sm px-4 py-4 ${dimmed ? 'opacity-60' : ''}`}>
-      <div className="flex items-start gap-3 mb-3">
+    <div className={`bg-white rounded-xl border border-[var(--divider)] shadow-sm px-3.5 py-3.5 ${dimmed ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-3 mb-2.5">
         <div className="flex-1 min-w-0">
-          <p className={`font-semibold text-[1rem] leading-snug text-[#1d1d1f] ${todo.status === 'done' ? 'line-through' : ''}`}>
+          <p className={`font-medium text-[0.9375rem] leading-snug text-[#1d1d1f] ${todo.status === 'done' ? 'line-through' : ''}`}>
             {todo.title}
           </p>
           {todo.notes && (
@@ -435,7 +453,7 @@ function TaskRow({ todo, actions, onDelete, dimmed }: {
           )}
         </div>
         <button onClick={onDelete}
-          className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+          className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors flex-shrink-0">
           <Trash2 size={14} />
         </button>
       </div>
@@ -525,27 +543,27 @@ function DeliSection() {
         </div>
         {!addingCat && (
           <button onClick={() => setAddingCat(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-semibold active:scale-95 transition-transform"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-[0.8125rem] font-medium active:scale-95 transition-transform"
             style={{ background: '#1a2e1c' }}>
-            <Plus size={15} /> Add Category
+            <Plus size={13} /> Add Category
           </button>
         )}
       </div>
 
       {/* New category form */}
       {addingCat && (
-        <div className="mb-4 p-4 bg-white rounded-2xl border border-[var(--divider)] shadow-sm">
+        <div className="mb-4 p-3.5 bg-white rounded-xl border border-[var(--divider)] shadow-sm">
           <form onSubmit={addCat} className="flex flex-col gap-2 sm:flex-row">
             <input autoFocus value={newCatName} onChange={e => setNewCatName(e.target.value)}
               placeholder="Category name (e.g. Hot Foods)" required
-              className="flex-1 px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              className="flex-1 px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
             <div className="flex gap-2">
               <button type="submit"
-                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-white text-sm font-semibold" style={{ background: '#1a2e1c' }}>
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-white text-[0.8125rem] font-medium" style={{ background: '#1a2e1c' }}>
                 Add
               </button>
               <button type="button" onClick={() => { setAddingCat(false); setNewCatName('') }}
-                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-sm text-[var(--secondary)] bg-[#f5f5f7]">
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[0.8125rem] text-[var(--secondary)] bg-[#f5f5f7]">
                 Cancel
               </button>
             </div>
@@ -558,7 +576,7 @@ function DeliSection() {
         {menu.categories.map((cat, idx) => {
           const catItems = menu.items.filter(i => i.categoryId === cat.id)
           return (
-            <div key={cat.id} className="bg-white rounded-2xl border border-[var(--divider)] shadow-sm overflow-hidden">
+            <div key={cat.id} className="bg-white rounded-xl border border-[var(--divider)] shadow-sm overflow-hidden">
 
               {/* Category header */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-[#f0f0ee] bg-[#fafaf8]">
@@ -588,11 +606,11 @@ function DeliSection() {
                       <span className="font-normal text-[var(--tertiary)] text-xs ml-1.5">{catItems.length} items</span>
                     </span>
                     <button onClick={() => { setEditCatId(cat.id); setEditCatVal(cat.name) }}
-                      className="p-2 text-[var(--secondary)] hover:bg-[#f0f0ee] rounded-lg transition-colors flex-shrink-0">
-                      <Pencil size={14} />
+                      className="p-1.5 text-[var(--secondary)] hover:bg-[#f0f0ee] rounded-md transition-colors flex-shrink-0">
+                      <Pencil size={13} />
                     </button>
                     <button onClick={() => deleteCat(cat)}
-                      className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                      className="p-1.5 text-red-400 hover:bg-red-50 rounded-md transition-colors flex-shrink-0">
                       <Trash2 size={14} />
                     </button>
                   </>
@@ -627,20 +645,20 @@ function DeliSection() {
                               ${Number(item.price).toFixed(2)}
                             </span>
                             <button onClick={() => { setEditItem(item.id); setAddItem(null) }}
-                              className="p-2 text-[var(--secondary)] hover:bg-[#f0f0ee] rounded-lg transition-colors">
-                              <Pencil size={14} />
+                              className="p-1.5 text-[var(--secondary)] hover:bg-[#f0f0ee] rounded-md transition-colors">
+                              <Pencil size={13} />
                             </button>
                             <button onClick={() => deleteItem(item)}
-                              className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                              className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
                               <Trash2 size={14} />
                             </button>
                           </div>
                         </div>
 
-                        {/* Row 2: big tap-friendly toggles */}
+                        {/* Row 2: tap-friendly toggles */}
                         <div className="grid grid-cols-2 gap-2">
                           <button onClick={() => toggleItem(item.id, 'soldOut')}
-                            className={`py-3 rounded-xl text-[0.875rem] font-bold transition-all active:scale-95 border ${
+                            className={`py-2 rounded-lg text-[0.8125rem] font-medium transition-all active:scale-95 border ${
                               item.soldOut
                                 ? 'bg-red-500 text-white border-red-500'
                                 : 'bg-white text-[var(--secondary)] border-[var(--divider)]'
@@ -648,7 +666,7 @@ function DeliSection() {
                             {item.soldOut ? '✗ Sold Out' : '✓ Available'}
                           </button>
                           <button onClick={() => toggleItem(item.id, 'featured')}
-                            className={`py-3 rounded-xl text-[0.875rem] font-bold transition-all active:scale-95 border ${
+                            className={`py-2 rounded-lg text-[0.8125rem] font-medium transition-all active:scale-95 border ${
                               item.featured
                                 ? 'bg-amber-400 text-amber-900 border-amber-400'
                                 : 'bg-white text-[var(--secondary)] border-[var(--divider)]'
@@ -670,11 +688,11 @@ function DeliSection() {
                   mode="add"
                 />
               ) : (
-                <div className="px-4 py-3 border-t border-[#f5f5f2]">
+                <div className="px-4 py-2.5 border-t border-[#f5f5f2]">
                   <button onClick={() => { setAddItem(cat.id); setEditItem(null) }}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl
-                               text-[0.875rem] font-medium text-forest-700 bg-forest-50 hover:bg-forest-100 transition-colors active:scale-95">
-                    <Plus size={14} /> Add item to {cat.name}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                               text-[0.8125rem] font-medium text-forest-700 bg-forest-50 hover:bg-forest-100 transition-colors active:scale-95">
+                    <Plus size={13} /> Add item to {cat.name}
                   </button>
                 </div>
               )}
@@ -731,31 +749,31 @@ function ItemForm({ initial, onSave, onCancel, mode }: {
       <div className="flex flex-col gap-2">
         <input ref={ref} value={name} onChange={e => setName(e.target.value)}
           placeholder="Item name *" required
-          className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+          className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-white focus:outline-none focus:border-forest-400" />
         <input value={desc} onChange={e => setDesc(e.target.value)}
           placeholder="Description (optional)"
-          className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+          className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-white focus:outline-none focus:border-forest-400" />
         <input type="url" value={image} onChange={e => setImage(e.target.value)}
           placeholder="Photo URL (optional) — paste a link to a food image"
-          className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+          className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-white focus:outline-none focus:border-forest-400" />
         {image && (
           <img src={image} alt="preview" onError={e => (e.currentTarget.style.display='none')}
-            className="w-full h-28 object-cover rounded-xl border border-[var(--divider)]" />
+            className="w-full h-28 object-cover rounded-lg border border-[var(--divider)]" />
         )}
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--secondary)]">$</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)]">$</span>
             <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)}
               placeholder="0.00" required
-              className="w-full pl-8 pr-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-white focus:outline-none focus:border-forest-400" />
+              className="w-full pl-7 pr-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-white focus:outline-none focus:border-forest-400" />
           </div>
           <button type="submit" disabled={busy}
-            className="px-5 py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-50 active:scale-95 transition-transform"
+            className="px-4 py-2.5 rounded-lg text-white font-medium text-[0.8125rem] disabled:opacity-50 active:scale-95 transition-transform"
             style={{ background: '#1a2e1c' }}>
             {mode === 'add' ? 'Add' : 'Save'}
           </button>
           <button type="button" onClick={onCancel}
-            className="px-4 py-3 rounded-xl text-sm text-[var(--secondary)] bg-[#f0f0ee] active:scale-95 transition-transform">
+            className="px-3.5 py-2.5 rounded-lg text-[0.8125rem] text-[var(--secondary)] bg-[#f0f0ee] active:scale-95 transition-transform">
             Cancel
           </button>
         </div>
@@ -813,9 +831,9 @@ function HoursTable({ title, emoji, hours, onChange }: {
   onChange: (day: Day, field: keyof DayHours, value: string|boolean) => void
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-[var(--divider)] shadow-sm overflow-hidden">
-      <div className="px-4 py-3.5 border-b border-[#f0f0ee] bg-[#fafaf8]">
-        <h3 className="font-bold text-[#1d1d1f]">{emoji} {title}</h3>
+    <div className="bg-white rounded-xl border border-[var(--divider)] shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#f0f0ee] bg-[#fafaf8]">
+        <h3 className="font-semibold text-[0.9375rem] text-[#1d1d1f]">{emoji} {title}</h3>
       </div>
       <div className="divide-y divide-[#f5f5f2]">
         {DAYS.map(day => {
@@ -830,7 +848,7 @@ function HoursTable({ title, emoji, hours, onChange }: {
                 </span>
                 <button
                   onClick={() => onChange(day, 'closed', !d.closed)}
-                  className={`px-3 py-1 rounded-lg text-[0.75rem] font-bold transition-all active:scale-95 border ${
+                  className={`px-2.5 py-1 rounded-md text-[0.75rem] font-medium transition-all active:scale-95 border ${
                     d.closed
                       ? 'bg-red-100 text-red-600 border-red-200'
                       : 'bg-green-50 text-green-700 border-green-200'
@@ -842,11 +860,11 @@ function HoursTable({ title, emoji, hours, onChange }: {
               {!d.closed && (
                 <div className="flex items-center gap-2">
                   <input type="time" value={d.open} onChange={e => onChange(day, 'open', e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-[var(--divider)] text-[0.875rem]
+                    className="flex-1 px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.875rem]
                                focus:outline-none focus:border-forest-400 bg-[#f9f9f6] text-center" />
                   <span className="text-[var(--tertiary)] text-sm flex-shrink-0">to</span>
                   <input type="time" value={d.close} onChange={e => onChange(day, 'close', e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-[var(--divider)] text-[0.875rem]
+                    className="flex-1 px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.875rem]
                                focus:outline-none focus:border-forest-400 bg-[#f9f9f6] text-center" />
                 </div>
               )}
