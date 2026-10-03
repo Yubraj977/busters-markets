@@ -42,7 +42,12 @@ const stats = [
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const products = await getBackofficeProducts()
+  let products: Awaited<ReturnType<typeof getBackofficeProducts>> = []
+  try {
+    products = await getBackofficeProducts()
+  } catch {
+    // Backoffice tunnel unreachable — show the page with no live products instead of crashing.
+  }
   const featured = products.slice(0, 8)
   const weeklyDeals = products.filter(p => p.isSale).slice(0, 4)
 

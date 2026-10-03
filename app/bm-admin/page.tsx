@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LogOut, Plus, Trash2, Pencil, Check, X,
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
+  ListChecks, UserRound, Undo2,
 } from 'lucide-react'
 
 // ─── types ───────────────────────────────────────────────────────────────
@@ -29,6 +30,17 @@ interface MenuItem {
 interface Category { id: string; name: string; order: number }
 interface Menu { categories: Category[]; items: MenuItem[] }
 
+type TodoStatus = 'open' | 'claimed' | 'done'
+interface Todo {
+  id: string
+  title: string
+  notes: string | null
+  status: TodoStatus
+  claimed_by: string | null
+  created_at: string
+  completed_at: string | null
+}
+
 const uid = () => crypto.randomUUID()
 
 async function saveMenu(menu: Menu) {
@@ -44,7 +56,7 @@ export default function AdminPage() {
   const [ready,  setReady]  = useState(false)
   const [pw,     setPw]     = useState('')
   const [pwErr,  setPwErr]  = useState('')
-  const [tab,    setTab]    = useState<'deli' | 'hours'>('deli')
+  const [tab,    setTab]    = useState<'tasks' | 'deli' | 'hours'>('tasks')
 
   useEffect(() => {
     setAuthed(sessionStorage.getItem('bmAdmin') === '1')
@@ -119,7 +131,14 @@ export default function AdminPage() {
           </div>
 
           {/* Tabs — centered */}
-          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-xs mx-auto">
+          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-sm mx-auto">
+            <button onClick={() => setTab('tasks')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
+                tab === 'tasks' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
+              }`}>
+              <ListChecks size={14} />
+              <span>Tasks</span>
+            </button>
             <button onClick={() => setTab('deli')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'deli' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
@@ -155,9 +174,272 @@ export default function AdminPage() {
 
       {/* ── Content ── */}
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {tab === 'tasks' && <TasksSection />}
         {tab === 'deli'  && <DeliSection />}
         {tab === 'hours' && <HoursSection />}
       </div>
+    </div>
+  )
+}
+
+// ─── TASKS SECTION ────────────────────────────────────────────────────────
+const NAME_KEY = 'bmEmployeeName'
+
+async function patchTodo(id: string, body: Record<string, unknown>) {
+  const res = await fetch('/api/todos', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...body }),
+  })
+  return res.json()
+}
+
+function TasksSection() {
+  const [todos,    setTodos]    = useState<Todo[] | null>(null)
+  const [name,     setName]     = useState('')
+  const [editName, setEditName] = useState(false)
+  const [nameDraft,setNameDraft]= useState('')
+  const [newTitle, setNewTitle] = useState('')
+  const [newNotes, setNewNotes] = useState('')
+  const [adding,   setAdding]   = useState(false)
+  const [toast,    setToast]    = useState<string | null>(null)
+
+  useEffect(() => {
+    setName(localStorage.getItem(NAME_KEY) ?? '')
+    fetch('/api/todos').then(r => r.json()).then(setTodos)
+  }, [])
+
+  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000) }
+
+  const saveName = (e: React.FormEvent) => {
+    e.preventDefault()
+    const n = nameDraft.trim()
+    if (!n) return
+    localStorage.setItem(NAME_KEY, n)
+    setName(n); setEditName(false)
+  }
+
+  const addTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTitle.trim()) return
+    const res = await fetch('/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle.trim(), notes: newNotes.trim() || undefined }),
+    })
+    const created = await res.json()
+    setTodos(t => [...(t ?? []), created])
+    setNewTitle(''); setNewNotes(''); setAdding(false); flash('Task added')
+  }
+
+  const pickUp = async (todo: Todo) => {
+    let who = name
+    if (!who) {
+      const typed = prompt('Your name?')?.trim()
+      if (!typed) return
+      who = typed
+      localStorage.setItem(NAME_KEY, who)
+      setName(who)
+    }
+    const updated = await patchTodo(todo.id, { status: 'claimed', claimedBy: who })
+    setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
+  }
+
+  const release = async (todo: Todo) => {
+    const updated = await patchTodo(todo.id, { status: 'open' })
+    setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
+  }
+
+  const markDone = async (todo: Todo) => {
+    const updated = await patchTodo(todo.id, { status: 'done' })
+    setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
+    flash('Nice work!')
+  }
+
+  const reopen = async (todo: Todo) => {
+    const updated = await patchTodo(todo.id, { status: 'open' })
+    setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
+  }
+
+  const removeTask = async (todo: Todo) => {
+    if (!confirm(`Delete "${todo.title}"?`)) return
+    await fetch('/api/todos', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: todo.id }),
+    })
+    setTodos(t => t!.filter(x => x.id !== todo.id))
+    flash('Deleted')
+  }
+
+  if (todos === null) return <div className="text-center py-16 text-[var(--secondary)]">Loading tasks…</div>
+
+  const open    = todos.filter(t => t.status === 'open')
+  const claimed = todos.filter(t => t.status === 'claimed')
+  const done    = todos.filter(t => t.status === 'done')
+
+  return (
+    <div>
+      {/* Header: who's working + add task */}
+      <div className="flex items-center justify-between mb-5 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-xl font-bold text-[#1d1d1f] tracking-tight">Tasks</h2>
+          {!editName ? (
+            <button onClick={() => { setNameDraft(name); setEditName(true) }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#f0f0ee] text-[0.75rem] font-medium text-[var(--secondary)] hover:bg-[#e6e6e2] transition-colors flex-shrink-0">
+              <UserRound size={12} />
+              {name ? name : 'Set your name'}
+            </button>
+          ) : (
+            <form onSubmit={saveName} className="flex items-center gap-1.5 flex-shrink-0">
+              <input autoFocus value={nameDraft} onChange={e => setNameDraft(e.target.value)}
+                placeholder="Your name" className="w-28 px-2.5 py-1 rounded-full border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400" />
+              <button type="submit" className="p-1.5 text-forest-700 bg-forest-50 rounded-full"><Check size={12} /></button>
+              <button type="button" onClick={() => setEditName(false)} className="p-1.5 text-[var(--secondary)] bg-[#f5f5f7] rounded-full"><X size={12} /></button>
+            </form>
+          )}
+        </div>
+        {!adding && (
+          <button onClick={() => setAdding(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-semibold active:scale-95 transition-transform flex-shrink-0"
+            style={{ background: '#1a2e1c' }}>
+            <Plus size={15} /> Add Task
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="mb-4 p-4 bg-white rounded-2xl border border-[var(--divider)] shadow-sm">
+          <form onSubmit={addTask} className="flex flex-col gap-2">
+            <input autoFocus value={newTitle} onChange={e => setNewTitle(e.target.value)}
+              placeholder="What needs to be done? (e.g. Restock dairy cooler)" required
+              className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+            <input value={newNotes} onChange={e => setNewNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--divider)] text-[0.9375rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+            <div className="flex gap-2">
+              <button type="submit"
+                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-white text-sm font-semibold" style={{ background: '#1a2e1c' }}>
+                Add
+              </button>
+              <button type="button" onClick={() => { setAdding(false); setNewTitle(''); setNewNotes('') }}
+                className="flex-1 sm:flex-none px-5 py-3 rounded-xl text-sm text-[var(--secondary)] bg-[#f5f5f7]">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Open */}
+      <TaskGroup label="To Do" count={open.length}>
+        {open.map(todo => (
+          <TaskRow key={todo.id} todo={todo}
+            onDelete={() => removeTask(todo)}
+            actions={
+              <button onClick={() => pickUp(todo)}
+                className="w-full py-3 rounded-xl text-[0.875rem] font-bold text-white active:scale-95 transition-all"
+                style={{ background: '#1e4023' }}>
+                Pick this up
+              </button>
+            } />
+        ))}
+        {open.length === 0 && <EmptyRow text="Nothing waiting — add a task above." />}
+      </TaskGroup>
+
+      {/* Claimed / in progress */}
+      <TaskGroup label="In Progress" count={claimed.length}>
+        {claimed.map(todo => (
+          <TaskRow key={todo.id} todo={todo}
+            onDelete={() => removeTask(todo)}
+            actions={
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => release(todo)}
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl text-[0.875rem] font-bold border border-[var(--divider)] text-[var(--secondary)] bg-white active:scale-95 transition-all">
+                  <Undo2 size={14} /> Release
+                </button>
+                <button onClick={() => markDone(todo)}
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl text-[0.875rem] font-bold text-white active:scale-95 transition-all"
+                  style={{ background: '#1e4023' }}>
+                  <Check size={14} /> Mark done
+                </button>
+              </div>
+            } />
+        ))}
+        {claimed.length === 0 && <EmptyRow text="No one's working on anything right now." />}
+      </TaskGroup>
+
+      {/* Done */}
+      {done.length > 0 && (
+        <TaskGroup label="Done" count={done.length}>
+          {done.map(todo => (
+            <TaskRow key={todo.id} todo={todo} dimmed
+              onDelete={() => removeTask(todo)}
+              actions={
+                <button onClick={() => reopen(todo)}
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-[0.8125rem] font-semibold text-[var(--secondary)] bg-[#f5f5f7] active:scale-95 transition-all">
+                  <Undo2 size={13} /> Reopen
+                </button>
+              } />
+          ))}
+        </TaskGroup>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1d1d1f] text-white
+                        text-sm font-medium px-5 py-3 rounded-full shadow-xl z-50 whitespace-nowrap">
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TaskGroup({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-[0.8125rem] font-bold uppercase tracking-wider text-[var(--tertiary)] mb-2 px-1">
+        {label} <span className="font-normal">({count})</span>
+      </h3>
+      <div className="space-y-2">{children}</div>
+    </div>
+  )
+}
+
+function EmptyRow({ text }: { text: string }) {
+  return (
+    <div className="text-center py-8 text-[0.875rem] text-[var(--tertiary)] bg-white rounded-2xl border border-dashed border-[var(--divider)]">
+      {text}
+    </div>
+  )
+}
+
+function TaskRow({ todo, actions, onDelete, dimmed }: {
+  todo: Todo; actions: React.ReactNode; onDelete: () => void; dimmed?: boolean
+}) {
+  return (
+    <div className={`bg-white rounded-2xl border border-[var(--divider)] shadow-sm px-4 py-4 ${dimmed ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <p className={`font-semibold text-[1rem] leading-snug text-[#1d1d1f] ${todo.status === 'done' ? 'line-through' : ''}`}>
+            {todo.title}
+          </p>
+          {todo.notes && (
+            <p className="text-[0.8125rem] text-[var(--secondary)] mt-0.5">{todo.notes}</p>
+          )}
+          {todo.claimed_by && (
+            <p className="text-[0.75rem] text-forest-700 mt-1 flex items-center gap-1">
+              <UserRound size={11} />
+              {todo.status === 'done' ? `Done by ${todo.claimed_by}` : `Claimed by ${todo.claimed_by}`}
+            </p>
+          )}
+        </div>
+        <button onClick={onDelete}
+          className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+          <Trash2 size={14} />
+        </button>
+      </div>
+      {actions}
     </div>
   )
 }
