@@ -1,0 +1,5 @@
+# Decorative food image
+
+`deli-food.png` was generated with the built-in image generation tool. It is illustrative, not a photograph of Buster's actual products. The TV labels it accordingly. Replace it with actual store food photography if available.
+
+Prompt: "Use case: ads-marketing. Create one decorative food photography banner asset for a cheerful American neighborhood deli TV menu. Extra-wide horizontal composition approximately 3:1. Four appetizing separate foods arranged across a single row: bacon egg cheese biscuit, stacked turkey lettuce tomato deli sandwich, long Italian sub sandwich, and a small fresh green salad. All food entirely within the frame with generous breathing space. Clean uniform pale cream background #fff5df, subtle soft contact shadows, warm studio food photography, crisp appetizing ingredients. No text, no letters, no logos, no prices, no utensils, no people. Food occupies the central horizontal band with clear top and bottom margins. This is illustrative decorative imagery, not an exact product photo."

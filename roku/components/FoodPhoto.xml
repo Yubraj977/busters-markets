@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="FoodPhoto" extends="Group">
+ <interface>
+  <field id="imageUrl" type="string" onChange="loadPhoto" />
+  <field id="photoWidth" type="float" value="144" onChange="layoutPhoto" />
+  <field id="photoHeight" type="float" value="144" onChange="layoutPhoto" />
+  <field id="large" type="boolean" value="false" onChange="layoutPhoto" />
+ </interface>
+ <script type="text/brightscript" uri="FoodPhoto.brs" />
+ <children>
+  <Rectangle id="back" color="#ecdcc5" />
+  <Label id="fallback" color="#9c1830" font="font:MediumBoldSystemFont" horizAlign="center" vertAlign="center" wrap="true" />
+  <Poster id="photo" loadDisplayMode="scaleToZoom" visible="false" />
+ </children>
+</component>

@@ -1,0 +1,6 @@
+{
+  "rootDir": ".",
+  "files": ["manifest", "source/**/*", "components/**/*", "images/icon-*.png", "images/splash-*.png"],
+  "outFile": "dist/busters-deli-roku.zip",
+  "stagingDir": "dist/staging"
+}

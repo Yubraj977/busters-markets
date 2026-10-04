@@ -1,0 +1,13 @@
+title=Buster's Deli
+major_version=1
+minor_version=1
+build_version=0
+ui_resolutions=fhd
+mm_icon_focus_fhd=pkg:/images/icon-fhd.png
+mm_icon_focus_hd=pkg:/images/icon-hd.png
+mm_icon_focus_sd=pkg:/images/icon-sd.png
+splash_screen_fhd=pkg:/images/splash-fhd.png
+splash_screen_hd=pkg:/images/splash-hd.png
+splash_screen_sd=pkg:/images/splash-sd.png
+splash_color=#be1830
+splash_min_time=0

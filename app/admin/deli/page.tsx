@@ -17,6 +17,7 @@ interface MenuItem {
   price: number
   soldOut: boolean
   featured: boolean
+  image?: string
 }
 interface Category {
   id: string
@@ -30,11 +31,12 @@ const uid  = () => crypto.randomUUID()
 const PASS = process.env.NEXT_PUBLIC_DELI_ADMIN_PASSWORD ?? 'busters2024'
 
 async function saveMenu(menu: Menu) {
-  await fetch('/api/deli-menu', {
+  const response = await fetch('/api/deli-menu', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(menu),
   })
+  if (!response.ok) throw new Error('Menu could not be saved. Please try again.')
 }
 
 // ── component ──────────────────────────────────────────────────────────────
@@ -81,10 +83,13 @@ export default function DeliAdminPage() {
       categories: [...next.categories].sort((a, b) => a.order - b.order),
       items:      [...next.items].sort((a, b) => a.order - b.order),
     }
-    setMenu(sorted)
     setSaving(true)
-    await saveMenu(sorted)
-    setSaving(false)
+    try {
+      await saveMenu(sorted)
+      setMenu(sorted)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // ── auth ──
@@ -489,6 +494,8 @@ function ItemModal({
 }) {
   const [name,  setName]  = useState(initial?.name        ?? '')
   const [desc,  setDesc]  = useState(initial?.description ?? '')
+  const [image, setImage] = useState(initial?.image ?? '')
+  const [error, setError] = useState<string | null>(null)
   const [price, setPrice] = useState(initial ? String(initial.price) : '')
   const [busy,  setBusy]  = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -499,8 +506,17 @@ function ItemModal({
     e.preventDefault()
     if (!name.trim() || !price) return
     setBusy(true)
-    await onSave({ name: name.trim(), description: desc.trim(), price: parseFloat(price) })
-    setBusy(false)
+    setError(null)
+    try {
+      const url = image.trim()
+      if (url && !/^https?:\/\//i.test(url)) throw new Error('Use a public image URL starting with https:// or http://.')
+      if (url) new URL(url)
+      await onSave({ name: name.trim(), description: desc.trim(), price: parseFloat(price), image: url })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -509,7 +525,7 @@ function ItemModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -564,6 +580,14 @@ function ItemModal({
             </div>
           </div>
 
+          <div>
+            <label htmlFor="food-photo-url" className="block text-[0.8125rem] font-medium text-[var(--secondary)] mb-1.5">Food photo URL (optional)</label>
+            <input id="food-photo-url" type="url" value={image} onChange={e => setImage(e.target.value)}
+              placeholder="https://example.com/sandwich.jpg" aria-describedby="food-photo-help"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--divider)] text-[0.9375rem] focus:outline-none focus:border-forest-400 bg-[#f9f9f6]" />
+            <p id="food-photo-help" className="mt-2 text-sm text-[var(--secondary)]">Paste a direct, public JPG, PNG, or WebP image link. The Roku menu updates automatically after saving. Clear this field to remove the photo.</p>
+          </div>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
           <div className="flex gap-3 pt-1">
             <button
               type="submit"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MenuScene" extends="Scene">
+ <script type="text/brightscript" uri="MenuScene.brs" />
+ <children>
+  <Rectangle width="1920" height="208" color="#a9152d" />
+  <Rectangle translation="[0,208]" width="1920" height="8" color="#f4ca50" />
+  <Label id="brand" translation="[80,48]" width="1080" height="94" text="Buster's Deli" color="#fff6e4" font="font:MediumBoldSystemFont" />
+  <Label id="strap" translation="[84,150]" width="1080" height="38" text="Something good is on the menu." color="#fff6e4" font="font:MediumSystemFont" />
+  <Rectangle translation="[1392,66]" width="448" height="90" color="#f4ca50" />
+  <Label id="today" translation="[1392,84]" width="448" height="54" text="Today's menu" color="#35181d" horizAlign="center" font="font:MediumBoldSystemFont" />
+  <Label id="category" translation="[80,248]" width="1096" height="70" color="#a9152d" font="font:MediumBoldSystemFont" />
+  <Group id="menuContent" translation="[80,340]" />
+  <Group id="spotlight" translation="[1232,256]">
+   <FoodPhoto id="heroPhoto" photoWidth="608" photoHeight="412" large="true" />
+   <Rectangle translation="[0,412]" width="608" height="284" color="#a9152d" />
+   <Label id="heroKicker" translation="[32,436]" width="544" height="38" color="#f4ca50" font="font:MediumBoldSystemFont" />
+   <Label id="heroName" translation="[32,488]" width="544" height="108" color="#fff6e4" wrap="true" maxLines="2" font="font:MediumBoldSystemFont" />
+   <Label id="heroPrice" translation="[32,618]" width="544" height="58" color="#fff6e4" font="font:MediumBoldSystemFont" />
+  </Group>
+  <Label id="message" translation="[80,388]" width="1072" height="240" text="Loading today's menu..." color="#35181d" wrap="true" font="font:MediumSystemFont" />
+  <Rectangle translation="[80,984]" width="1760" height="2" color="#d7c6ac" />
+  <Label id="status" translation="[80,1004]" width="1260" height="42" color="#66534a" font="font:MediumSystemFont" />
+  <Label id="pageLabel" translation="[1380,1004]" width="460" height="42" color="#a9152d" horizAlign="right" font="font:MediumBoldSystemFont" />
+  <Timer id="refreshTimer" duration="15" repeat="true" />
+  <Timer id="pageTimer" duration="12" repeat="true" />
+ </children>
+</component>
