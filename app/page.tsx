@@ -5,6 +5,9 @@ import ProductCard from '@/components/products/ProductCard'
 import HeroSearch from '@/components/home/HeroSearch'
 import { getBackofficeProducts } from '@/lib/backoffice'
 
+const SHOW_STATS = false
+const SHOW_PERKS = false
+
 const perks = [
   { icon: Truck,       label: 'Free Delivery',    sub: 'On orders over $35'       },
   { icon: ShieldCheck, label: 'Quality Guarantee', sub: 'Or your money back'       },
@@ -130,18 +133,20 @@ export default async function HomePage() {
                 </div>
               )}
 
-              {/* Stats row */}
-              <div className="flex items-center gap-8 pt-2 border-t border-[#e5e4de]">
-                {stats.map(({ value, label }, i) => (
-                  <div key={label} className={i > 0 ? 'pl-8 border-l border-[#e5e4de]' : ''}>
-                    <div className="font-bold tracking-[-0.03em] text-[#1d1d1f]"
-                         style={{ fontSize: '1.5rem' }}>
-                      {value}
+              {/* Stats row — temporarily hidden, re-enable by setting SHOW_STATS to true */}
+              {SHOW_STATS && (
+                <div className="flex items-center gap-8 pt-2 border-t border-[#e5e4de]">
+                  {stats.map(({ value, label }, i) => (
+                    <div key={label} className={i > 0 ? 'pl-8 border-l border-[#e5e4de]' : ''}>
+                      <div className="font-bold tracking-[-0.03em] text-[#1d1d1f]"
+                           style={{ fontSize: '1.5rem' }}>
+                        {value}
+                      </div>
+                      <div className="text-[0.75rem] mt-0.5" style={{ color: '#6e6e73' }}>{label}</div>
                     </div>
-                    <div className="text-[0.75rem] mt-0.5" style={{ color: '#6e6e73' }}>{label}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ── Right: image collage + floating cards ── */}
@@ -239,23 +244,26 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════ PERKS BAR ══════════════════════════ */}
-      <section className="bg-white border-b border-[var(--divider)]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[var(--divider)]">
-            {perks.map(({ icon: Icon, label, sub }) => (
-              <div key={label} className="flex items-center gap-3 px-6 py-5">
-                <div className="w-9 h-9 bg-forest-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Icon size={17} className="text-forest-700" />
+      {/* Temporarily hidden, re-enable by setting SHOW_PERKS to true */}
+      {SHOW_PERKS && (
+        <section className="bg-white border-b border-[var(--divider)]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[var(--divider)]">
+              {perks.map(({ icon: Icon, label, sub }) => (
+                <div key={label} className="flex items-center gap-3 px-6 py-5">
+                  <div className="w-9 h-9 bg-forest-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon size={17} className="text-forest-700" />
+                  </div>
+                  <div>
+                    <p className="text-[0.875rem] font-semibold text-[#1d1d1f] tracking-[-0.01em]">{label}</p>
+                    <p className="text-[0.75rem] text-[var(--secondary)] mt-0.5">{sub}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[0.875rem] font-semibold text-[#1d1d1f] tracking-[-0.01em]">{label}</p>
-                  <p className="text-[0.75rem] text-[var(--secondary)] mt-0.5">{sub}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ══════════════════════════ CATEGORIES ══════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 py-14">
