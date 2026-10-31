@@ -30,6 +30,7 @@ export interface Product {
   ebtEligible?: boolean
   ageRestricted?: boolean
   isWeighed?: boolean
+  isFresh?: boolean
 }
 
 export interface CartItem {

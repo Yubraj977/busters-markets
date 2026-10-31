@@ -46,11 +46,18 @@ export default async function ProductPage({ params }: Props) {
             className="object-contain p-8"
             priority
           />
-          {product.isSale && product.comparePrice && (
-            <div className="absolute top-4 left-4 bg-ember text-white text-sm font-black px-3 py-1.5 rounded-full">
-              -{Math.round((1 - product.price / product.comparePrice) * 100)}% OFF
-            </div>
-          )}
+          <div className="absolute top-4 left-4 flex flex-col gap-1.5 items-start">
+            {product.isFresh && (
+              <div className="bg-gold text-forest-950 text-xs font-black px-3 py-1.5 rounded-full flex items-center gap-1">
+                <Star size={12} fill="currentColor" /> Fresh Pick
+              </div>
+            )}
+            {product.isSale && product.comparePrice && (
+              <div className="bg-ember text-white text-sm font-black px-3 py-1.5 rounded-full">
+                -{Math.round((1 - product.price / product.comparePrice) * 100)}% OFF
+              </div>
+            )}
+          </div>
           {product.isOrganic && (
             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-forest-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
               <Leaf size={12} /> Organic

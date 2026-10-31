@@ -21,6 +21,7 @@ export interface BackofficeInventoryItem {
   ebtEligible: boolean
   ageRestricted: boolean
   depositAmount: number | null
+  isFresh: boolean
 }
 
 export async function getBackofficeInventory(): Promise<BackofficeInventoryItem[]> {
@@ -123,10 +124,12 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     ebtEligible: item.ebtEligible,
     ageRestricted: item.ageRestricted,
     isWeighed: item.isWeighed,
+    isFresh: item.isFresh,
   }
 }
 
 export async function getBackofficeProducts(): Promise<Product[]> {
   const items = await getBackofficeInventory()
-  return items.map(toProduct)
+  // Fresh-flagged products get top priority across the storefront (stable sort keeps everything else in place).
+  return items.map(toProduct).sort((a, b) => Number(b.isFresh) - Number(a.isFresh))
 }

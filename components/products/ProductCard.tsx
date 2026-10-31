@@ -49,6 +49,12 @@ export default function ProductCard({ product, compact = false }: Props) {
     >
       {/* Badges */}
       <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+        {product.isFresh && (
+          <span className="bg-gold text-forest-950 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
+            <Star size={9} fill="currentColor" />
+            Fresh Pick
+          </span>
+        )}
         {product.isSale && discount > 0 && (
           <span className="bg-ember text-white text-[10px] font-black px-2 py-0.5 rounded-full">
             -{discount}%
