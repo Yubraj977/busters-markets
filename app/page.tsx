@@ -58,6 +58,7 @@ export default async function HomePage() {
   const liveCategories = Array.from(categoryCounts.entries())
     .sort((a, b) => b[1] - a[1])
   const quickCategories = liveCategories.slice(0, 6)
+  const topCategories = liveCategories.slice(0, 5)
 
   return (
     <>
@@ -272,9 +273,9 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {liveCategories.length > 0 ? (
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
-            {liveCategories.map(([name, count]) => (
+        {topCategories.length > 0 ? (
+          <div className="grid grid-cols-5 gap-3">
+            {topCategories.map(([name, count]) => (
               <Link
                 key={name}
                 href={`/products?category=${encodeURIComponent(name)}`}
