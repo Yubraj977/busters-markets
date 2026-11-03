@@ -194,13 +194,24 @@ function ProductsContent({ products }: { products: Product[] }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Page header */}
-      <div className="mb-6">
-        <h1 className="font-display font-bold text-3xl text-forest-900">
-          {q ? `Results for "${q}"` : selectedCategory
-            ? selectedCategory
-            : showOnSale ? '🔥 Weekly Deals' : 'All Products'}
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">{filtered.length} products found</p>
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display font-bold text-3xl text-forest-900">
+            {q ? `Results for "${q}"` : selectedCategory
+              ? selectedCategory
+              : showOnSale ? '🔥 Weekly Deals' : 'All Products'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">{filtered.length} products found</p>
+        </div>
+        {activeFilterCount > 0 && (
+          <button
+            onClick={clearAll}
+            className="flex items-center gap-1.5 px-4 py-2 bg-ember/10 text-ember rounded-full text-sm font-bold hover:bg-ember/20 transition-colors flex-shrink-0"
+          >
+            <X size={14} />
+            Clear {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-8">
