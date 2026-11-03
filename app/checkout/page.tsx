@@ -92,9 +92,9 @@ export default function CheckoutPage() {
     const clover = new window.Clover(appId)
     cloverRef.current = clover
     const elements = clover.elements()
-    elements.create('CARD_NUMBER').mount('#card-number')
-    elements.create('CARD_DATE').mount('#card-date')
-    elements.create('CARD_CVV').mount('#card-cvv')
+    elements.create('CARD_NUMBER').mount('card-number')
+    elements.create('CARD_DATE').mount('card-date')
+    elements.create('CARD_CVV').mount('card-cvv')
     fieldsMountedRef.current = true
   }, [step, cloverReady])
 
@@ -112,7 +112,10 @@ export default function CheckoutPage() {
     setTokenizing(true)
     setTokenizeError('')
     try {
-      const result = await cloverRef.current.createToken()
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000)
+      )
+      const result = await Promise.race([cloverRef.current.createToken(), timeout])
       if (result.errors && Object.keys(result.errors).length > 0) {
         setTokenizeError(Object.values(result.errors)[0])
         return
@@ -124,8 +127,12 @@ export default function CheckoutPage() {
       setCardToken(result.token)
       setCardSummary(result.card ?? null)
       setStep(3)
-    } catch {
-      setTokenizeError('Something went wrong validating your card.')
+    } catch (err) {
+      setTokenizeError(
+        err instanceof Error && err.message === 'timeout'
+          ? 'Card validation timed out — please check your card details and try again.'
+          : 'Something went wrong validating your card.'
+      )
     } finally {
       setTokenizing(false)
     }
