@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Check } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const perks = [
   'Free delivery on first order',
@@ -16,13 +17,27 @@ export default function SignupPage() {
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [done, setDone]       = useState(false)
+  const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false)
+  const [error, setError]     = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1000))
-    setDone(true)
+    setError('')
+    const supabase = createClient()
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: { data: { name: form.name } },
+    })
     setLoading(false)
+    if (signUpError) {
+      setError(signUpError.message)
+      return
+    }
+    // If email confirmation is required, Supabase returns a user with no active session.
+    setNeedsEmailConfirm(!data.session)
+    setDone(true)
   }
 
   if (done) {
@@ -32,15 +47,19 @@ export default function SignupPage() {
           <div className="w-16 h-16 bg-forest-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check size={28} className="text-forest-700" />
           </div>
-          <h2 className="font-display font-bold text-2xl text-forest-900 mb-2">Almost there!</h2>
+          <h2 className="font-display font-bold text-2xl text-forest-900 mb-2">
+            {needsEmailConfirm ? 'Check your inbox' : "You're in!"}
+          </h2>
           <p className="text-gray-500 text-sm mb-6">
-            Connect Supabase to enable real sign-ups. For now, explore the site!
+            {needsEmailConfirm
+              ? "We've sent a confirmation link to your email. Click it to activate your account."
+              : 'Your account is ready — start shopping!'}
           </p>
           <Link
-            href="/products"
+            href={needsEmailConfirm ? '/products' : '/account'}
             className="inline-block px-6 py-3 bg-forest-700 text-white rounded-full font-bold text-sm hover:bg-forest-800 transition-colors"
           >
-            Start Shopping
+            {needsEmailConfirm ? 'Start Shopping' : 'Go to Account'}
           </Link>
         </div>
       </div>
@@ -81,6 +100,12 @@ export default function SignupPage() {
             Already have one?{' '}
             <Link href="/auth/login" className="text-forest-700 font-semibold hover:text-forest-900">Sign in</Link>
           </p>
+
+          {error && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mb-5">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

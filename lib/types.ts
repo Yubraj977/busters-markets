@@ -47,20 +47,54 @@ export interface Category {
   productCount?: number
 }
 
+export interface OrderItem {
+  productSku: string
+  name: string
+  unit?: string
+  unitPriceCents: number
+  quantity: number
+  lineTotalCents: number
+}
+
+export type OrderStatus =
+  | 'pending' | 'paid' | 'payment_failed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+
 export interface Order {
   id: string
   userId: string
-  items: CartItem[]
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  total: number
-  subtotal: number
-  tax: number
-  deliveryFee: number
-  address: Address
+  cloverChargeId: string | null
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  subtotalCents: number
+  taxCents: number
+  deliveryFeeCents: number
+  totalCents: number
+  currency: string
+  customerName: string
+  customerEmail: string
+  customerPhone?: string
+  deliveryAddress: Address
+  estimatedDelivery?: string
+  items: OrderItem[]
   createdAt: string
   updatedAt: string
-  estimatedDelivery?: string
 }
+
+export interface CheckoutRequest {
+  items: { sku: string; quantity: number }[]
+  cardToken: string
+  customer: { name: string; email: string; phone?: string }
+  deliveryAddress: Address
+}
+
+export type CheckoutErrorCode =
+  | 'UNAUTHENTICATED' | 'INVALID_REQUEST' | 'NOT_CONFIGURED'
+  | 'CARD_DECLINED' | 'CLOVER_UNREACHABLE' | 'ORDER_SAVE_FAILED' | 'SERVER_ERROR'
+
+export type CheckoutResponse =
+  | { ok: true; orderId: string; cloverChargeId: string }
+  | { ok: false; error: CheckoutErrorCode; message: string }
 
 export interface Address {
   id?: string

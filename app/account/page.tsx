@@ -1,11 +1,8 @@
 import Link from 'next/link'
 import { Package, MapPin, Heart, Settings, ChevronRight, ShoppingBag } from 'lucide-react'
-
-const recentOrders = [
-  { id: 'BM841923', date: 'Jun 5, 2026', total: 67.42, items: 9,  status: 'Delivered', statusColor: 'bg-green-100 text-green-700' },
-  { id: 'BM837641', date: 'May 28, 2026', total: 34.17, items: 5, status: 'Delivered', statusColor: 'bg-green-100 text-green-700' },
-  { id: 'BM830019', date: 'May 14, 2026', total: 89.03, items: 12, status: 'Delivered', statusColor: 'bg-green-100 text-green-700' },
-]
+import { createClient } from '@/lib/supabase/server'
+import { mapOrderRow, statusColor, statusLabel, itemCount } from '@/lib/orders'
+import SignOutButton from '@/components/account/SignOutButton'
 
 const quickLinks = [
   { icon: Package,   label: 'Order History',   sub: 'View and track all orders',   href: '/account/orders' },
@@ -14,7 +11,33 @@ const quickLinks = [
   { icon: Settings,  label: 'Account Settings', sub: 'Profile, password, and more', href: '/account' },
 ]
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [recentOrdersResult, orderCountResult, itemsResult] = user
+    ? await Promise.all([
+        supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(3),
+        supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('order_items')
+          .select('quantity, orders!inner(user_id)')
+          .eq('orders.user_id', user.id),
+      ])
+    : [{ data: [] }, { count: 0 }, { data: [] }] as const
+
+  const recentOrders = (recentOrdersResult.data ?? []).map(mapOrderRow)
+  const totalOrders = orderCountResult.count ?? 0
+  const itemsBought = (itemsResult.data ?? []).reduce((sum: number, row: { quantity: number }) => sum + row.quantity, 0)
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Header */}
@@ -24,22 +47,16 @@ export default function AccountPage() {
         </div>
         <div>
           <h1 className="font-display font-bold text-2xl text-forest-900">Welcome back!</h1>
-          <p className="text-gray-500 text-sm">yubrajkhatri977@gmail.com</p>
+          <p className="text-gray-500 text-sm">{user?.email}</p>
         </div>
-        <Link
-          href="/auth/login"
-          className="ml-auto px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-        >
-          Sign Out
-        </Link>
+        <SignOutButton />
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {[
-          { label: 'Total Orders', value: '24', icon: ShoppingBag },
-          { label: 'Items Bought', value: '187', icon: Package },
-          { label: 'Total Saved', value: '$34.50', icon: Heart },
+          { label: 'Total Orders', value: String(totalOrders), icon: ShoppingBag },
+          { label: 'Items Bought', value: String(itemsBought), icon: Package },
         ].map(({ label, value, icon: Icon }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
             <div className="w-10 h-10 bg-forest-50 rounded-xl flex items-center justify-center mx-auto mb-2">
@@ -61,25 +78,31 @@ export default function AccountPage() {
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {recentOrders.map(order => (
-              <div key={order.id} className="bg-white border border-gray-100 rounded-2xl p-4 hover:border-forest-200 transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="font-mono text-sm font-bold text-forest-900">{order.id}</span>
-                    <span className="text-xs text-gray-400 ml-2">{order.date}</span>
+          {recentOrders.length === 0 ? (
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
+              No orders yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentOrders.map(order => (
+                <div key={order.id} className="bg-white border border-gray-100 rounded-2xl p-4 hover:border-forest-200 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="font-mono text-sm font-bold text-forest-900">{order.id.slice(0, 8).toUpperCase()}</span>
+                      <span className="text-xs text-gray-400 ml-2">{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor[order.status]}`}>
+                      {statusLabel[order.status]}
+                    </span>
                   </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${order.statusColor}`}>
-                    {order.status}
-                  </span>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">{itemCount(order)} items</span>
+                    <span className="font-bold text-forest-900">${(order.totalCents / 100).toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{order.items} items</span>
-                  <span className="font-bold text-forest-900">${order.total.toFixed(2)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick links */}

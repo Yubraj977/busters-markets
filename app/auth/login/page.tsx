@@ -1,10 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Leaf } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail]           = useState('')
   const [password, setPassword]     = useState('')
   const [showPassword, setShowPw]   = useState(false)
@@ -15,9 +27,15 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    await new Promise(r => setTimeout(r, 1000))
-    setError('Connect Supabase to enable authentication.')
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
+    if (signInError) {
+      setError(signInError.message)
+      return
+    }
+    router.push(searchParams.get('next') || '/account')
+    router.refresh()
   }
 
   return (
