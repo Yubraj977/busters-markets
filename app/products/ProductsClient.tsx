@@ -110,28 +110,19 @@ function ProductsContent({ products }: { products: Product[] }) {
       {/* Category */}
       <div>
         <h3 className="text-sm font-bold text-forest-900 mb-3">Category</h3>
-        <div className="space-y-1.5">
-          <button
-            onClick={() => setSelectedCategory('')}
-            className={clsx('w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors',
-              !selectedCategory ? 'bg-forest-700 text-white font-semibold' : 'text-gray-600 hover:bg-forest-50'
-            )}
+        <div className="relative">
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm
+                       bg-white text-gray-700 capitalize focus:outline-none focus:border-forest-400 cursor-pointer"
           >
-            All Categories
-          </button>
-          {liveCategories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(selectedCategory === cat ? '' : cat)}
-              className={clsx('w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors capitalize',
-                selectedCategory === cat
-                  ? 'bg-forest-700 text-white font-semibold'
-                  : 'text-gray-600 hover:bg-forest-50'
-              )}
-            >
-              {cat}
-            </button>
-          ))}
+            <option value="">All Categories</option>
+            {liveCategories.map(cat => (
+              <option key={cat} value={cat} className="capitalize">{cat}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
       </div>
 
