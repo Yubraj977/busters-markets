@@ -98,3 +98,38 @@ export async function refundCloverCharge(chargeId: string): Promise<{ refundId: 
 
   return { refundId: data.id }
 }
+
+export interface CloverChargeStatus {
+  id: string
+  refunded: boolean
+  status: string
+}
+
+// Fetches a charge's current state directly from Clover. Used by the webhook
+// handler to confirm what actually happened rather than trusting a guessed
+// event-type name -- Clover's event payload shape isn't reliably documented,
+// but re-checking the source of truth for whatever charge an event references
+// works regardless of the exact event name.
+export async function getCloverCharge(chargeId: string): Promise<CloverChargeStatus | null> {
+  const privateToken = process.env.CLOVER_PRIVATE_TOKEN
+  if (!privateToken || chargeId.startsWith('MOCK-')) return null
+
+  let res: Response
+  try {
+    res = await fetch(`${cloverBaseUrl()}/v1/charges/${chargeId}`, {
+      headers: { Authorization: `Bearer ${privateToken}` },
+    })
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+
+  const data = await res.json().catch(() => null)
+  if (!data?.id) return null
+
+  return {
+    id: data.id,
+    refunded: Boolean(data.refunded) || (typeof data.amount_refunded === 'number' && data.amount_refunded > 0),
+    status: data.status ?? 'unknown',
+  }
+}
