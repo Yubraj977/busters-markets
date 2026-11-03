@@ -89,7 +89,7 @@ export interface CheckoutRequest {
 }
 
 export type CheckoutErrorCode =
-  | 'UNAUTHENTICATED' | 'INVALID_REQUEST' | 'NOT_CONFIGURED'
+  | 'UNAUTHENTICATED' | 'INVALID_REQUEST' | 'NOT_CONFIGURED' | 'OUT_OF_DELIVERY_AREA'
   | 'CARD_DECLINED' | 'CLOVER_UNREACHABLE' | 'ORDER_SAVE_FAILED' | 'SERVER_ERROR'
 
 export type CheckoutResponse =

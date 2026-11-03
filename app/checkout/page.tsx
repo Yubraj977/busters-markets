@@ -75,11 +75,35 @@ export default function CheckoutPage() {
   })
   const [payment, setPayment] = useState({ cardName: '' })
   const [customerEmail, setCustomerEmail] = useState('')
+  const [checkingDelivery, setCheckingDelivery] = useState(false)
+  const [deliveryError, setDeliveryError] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setCustomerEmail(data.user?.email ?? ''))
   }, [])
+
+  const handleContinueToPayment = async () => {
+    setCheckingDelivery(true)
+    setDeliveryError('')
+    try {
+      const res = await fetch('/api/delivery-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zip: delivery_form.zip }),
+      })
+      const data = await res.json()
+      if (!data.withinRadius) {
+        setDeliveryError("Sorry, we don't deliver to this address yet — we currently only deliver within 10 miles of our Scottsville, NY store.")
+        return
+      }
+      setStep(2)
+    } catch {
+      setDeliveryError('Could not verify your delivery address — please try again.')
+    } finally {
+      setCheckingDelivery(false)
+    }
+  }
 
   // ── Clover.js tokenization ──
   const [cloverReady, setCloverReady] = useState(false)
@@ -358,11 +382,17 @@ export default function CheckoutPage() {
                   />
                 </div>
               </div>
+              {deliveryError && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mt-4">
+                  {deliveryError}
+                </div>
+              )}
               <button
-                onClick={() => setStep(2)}
-                className="mt-6 w-full py-3.5 bg-forest-700 text-white font-bold rounded-xl hover:bg-forest-800 transition-colors"
+                onClick={handleContinueToPayment}
+                disabled={checkingDelivery}
+                className="mt-6 w-full py-3.5 bg-forest-700 text-white font-bold rounded-xl hover:bg-forest-800 transition-colors disabled:opacity-60"
               >
-                Continue to Payment →
+                {checkingDelivery ? 'Checking delivery area…' : 'Continue to Payment →'}
               </button>
             </div>
           )}

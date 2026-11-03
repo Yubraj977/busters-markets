@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getBackofficeProducts } from '@/lib/backoffice'
 import { chargeCloverCard, CloverChargeError } from '@/lib/clover'
 import { calcOrderTotals } from '@/lib/pricing'
+import { isWithinDeliveryRadius } from '@/lib/delivery'
 import type { CheckoutRequest, CheckoutResponse, Address } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,13 @@ export async function POST(req: Request) {
     if (!isValidBody(body)) {
       return NextResponse.json<CheckoutResponse>(
         { ok: false, error: 'INVALID_REQUEST', message: 'Checkout request is missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    if (!isWithinDeliveryRadius(body.deliveryAddress.zip)) {
+      return NextResponse.json<CheckoutResponse>(
+        { ok: false, error: 'OUT_OF_DELIVERY_AREA', message: "We don't deliver to this address yet" },
         { status: 400 }
       )
     }
