@@ -98,9 +98,9 @@ export default function CheckoutPage() {
     const clover = new window.Clover(appId)
     cloverRef.current = clover
     const elements = clover.elements()
-    elements.create('CARD_NUMBER').mount('card-number')
-    elements.create('CARD_DATE').mount('card-date')
-    elements.create('CARD_CVV').mount('card-cvv')
+    elements.create('CARD_NUMBER').mount('#card-number')
+    elements.create('CARD_DATE').mount('#card-date')
+    elements.create('CARD_CVV').mount('#card-cvv')
     fieldsMountedRef.current = true
   }, [step, cloverReady])
 
