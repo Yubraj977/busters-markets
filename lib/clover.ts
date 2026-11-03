@@ -4,13 +4,17 @@ export class CloverChargeError extends Error {
   }
 }
 
+function cloverBaseUrl(): string {
+  const env = process.env.CLOVER_ENV ?? 'sandbox'
+  return env === 'production' ? 'https://scl.clover.com' : 'https://scl-sandbox.dev.clover.com'
+}
+
 export async function chargeCloverCard(params: {
   cardToken: string
   amountCents: number
   currency?: string
 }): Promise<{ chargeId: string }> {
   const privateToken = process.env.CLOVER_PRIVATE_TOKEN
-  const env = process.env.CLOVER_ENV ?? 'sandbox'
 
   if (process.env.MOCK_CHECKOUT_CHARGE === 'true') {
     return { chargeId: `MOCK-${Date.now()}` }
@@ -20,7 +24,7 @@ export async function chargeCloverCard(params: {
     throw new CloverChargeError('NOT_CONFIGURED', 'CLOVER_PRIVATE_TOKEN is not configured')
   }
 
-  const base = env === 'production' ? 'https://scl.clover.com' : 'https://scl-sandbox.dev.clover.com'
+  const base = cloverBaseUrl()
 
   let res: Response
   try {
@@ -50,4 +54,47 @@ export async function chargeCloverCard(params: {
   }
 
   return { chargeId: data.id }
+}
+
+export class CloverRefundError extends Error {
+  constructor(public code: 'NOT_CONFIGURED' | 'FAILED' | 'UNREACHABLE', message: string) {
+    super(message)
+  }
+}
+
+// Full refund only -- Clover's charge-level /v1/refunds endpoint doesn't support
+// partial refunds for charges with tax or multiple line items, which covers every
+// charge this app creates.
+export async function refundCloverCharge(chargeId: string): Promise<{ refundId: string }> {
+  const privateToken = process.env.CLOVER_PRIVATE_TOKEN
+
+  if (chargeId.startsWith('MOCK-')) {
+    return { refundId: `MOCK-REFUND-${Date.now()}` }
+  }
+
+  if (!privateToken) {
+    throw new CloverRefundError('NOT_CONFIGURED', 'CLOVER_PRIVATE_TOKEN is not configured')
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`${cloverBaseUrl()}/v1/refunds`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${privateToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ charge: chargeId }),
+    })
+  } catch {
+    throw new CloverRefundError('UNREACHABLE', 'Could not reach Clover')
+  }
+
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok || !data.id) {
+    throw new CloverRefundError('FAILED', data.message ?? `Refund failed: ${res.status}`)
+  }
+
+  return { refundId: data.id }
 }

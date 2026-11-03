@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LogOut, Plus, Trash2, Pencil, Check, X,
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
-  ListChecks, UserRound, Undo2,
+  ListChecks, UserRound, Undo2, Receipt, RotateCcw,
 } from 'lucide-react'
+import { mapOrderRow, statusLabel, itemCount } from '@/lib/orders'
+import type { Order, OrderStatus } from '@/lib/types'
 
 // ─── types ───────────────────────────────────────────────────────────────
 const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
@@ -56,7 +58,7 @@ export default function AdminPage() {
   const [ready,  setReady]  = useState(false)
   const [pw,     setPw]     = useState('')
   const [pwErr,  setPwErr]  = useState('')
-  const [tab,    setTab]    = useState<'tasks' | 'deli' | 'hours'>('tasks')
+  const [tab,    setTab]    = useState<'tasks' | 'deli' | 'hours' | 'orders'>('tasks')
 
   useEffect(() => {
     setAuthed(sessionStorage.getItem('bmAdmin') === '1')
@@ -153,6 +155,13 @@ export default function AdminPage() {
               <Clock size={14} />
               <span>Hours</span>
             </button>
+            <button onClick={() => setTab('orders')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
+                tab === 'orders' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
+              }`}>
+              <Receipt size={14} />
+              <span>Orders</span>
+            </button>
           </div>
 
           {/* Right actions */}
@@ -174,9 +183,10 @@ export default function AdminPage() {
 
       {/* ── Content ── */}
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {tab === 'tasks' && <TasksSection />}
-        {tab === 'deli'  && <DeliSection />}
-        {tab === 'hours' && <HoursSection />}
+        {tab === 'tasks'  && <TasksSection />}
+        {tab === 'deli'   && <DeliSection />}
+        {tab === 'hours'  && <HoursSection />}
+        {tab === 'orders' && <OrdersSection />}
       </div>
     </div>
   )
@@ -872,6 +882,141 @@ function HoursTable({ title, emoji, hours, onChange }: {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── ORDERS SECTION ───────────────────────────────────────────────────────
+const STATUS_OPTIONS: OrderStatus[] = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'payment_failed']
+
+function OrdersSection() {
+  const [orders, setOrders] = useState<Order[] | null>(null)
+  const [loadErr, setLoadErr] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [actionErr, setActionErr] = useState<string | null>(null)
+
+  const load = () => {
+    setLoadErr(null)
+    fetch('/api/admin/orders')
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
+      .then(rows => setOrders(rows.map(mapOrderRow)))
+      .catch(() => setLoadErr('Could not load orders.'))
+  }
+
+  useEffect(load, [])
+
+  const updateStatus = async (id: string, status: OrderStatus) => {
+    setBusyId(id)
+    setActionErr(null)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) throw new Error()
+      load()
+    } catch {
+      setActionErr('Could not update that order\'s status.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const refund = async (order: Order) => {
+    if (!confirm(`Refund ${order.customerName}'s order for $${(order.totalCents / 100).toFixed(2)}? This charges back to their card immediately and cannot be undone.`)) return
+    setBusyId(order.id)
+    setActionErr(null)
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/refund`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Refund failed')
+      load()
+    } catch (err) {
+      setActionErr(err instanceof Error ? err.message : 'Refund failed.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (loadErr) return <p className="text-center text-red-500 py-10">{loadErr}</p>
+  if (!orders) return <p className="text-center text-[var(--tertiary)] py-10">Loading orders…</p>
+
+  return (
+    <div>
+      <h2 className="font-bold text-lg text-[#1d1d1f] mb-4">Orders ({orders.length})</h2>
+      {actionErr && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mb-4">
+          {actionErr}
+        </div>
+      )}
+      {orders.length === 0 ? (
+        <p className="text-center text-[var(--tertiary)] py-10">No orders yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {orders.map(order => (
+            <details key={order.id} className="bg-white border border-[var(--divider)] rounded-2xl p-4 group">
+              <summary className="list-none cursor-pointer flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-[#1d1d1f]">{order.id.slice(0, 8).toUpperCase()}</span>
+                    <span className="text-xs text-[var(--tertiary)]">{new Date(order.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-sm text-[var(--secondary)] mt-0.5">{order.customerName} · {order.customerEmail}</p>
+                  <p className="text-xs text-[var(--tertiary)] mt-0.5">{itemCount(order)} items</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-[#1d1d1f]">${(order.totalCents / 100).toFixed(2)}</p>
+                  <p className="text-xs text-[var(--tertiary)] mt-0.5 capitalize">{order.paymentStatus}</p>
+                </div>
+              </summary>
+
+              <div className="mt-3 pt-3 border-t border-[var(--divider)] space-y-3">
+                <div className="space-y-1">
+                  {order.items.map(item => (
+                    <div key={item.productSku} className="flex justify-between text-sm">
+                      <span className="text-[var(--secondary)]">{item.name} × {item.quantity}</span>
+                      <span className="text-[#1d1d1f]">${(item.lineTotalCents / 100).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--tertiary)]">
+                  {order.deliveryAddress.street}, {order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zip}
+                </p>
+                {order.cloverChargeId && (
+                  <p className="text-xs text-[var(--tertiary)] font-mono">Charge: {order.cloverChargeId}</p>
+                )}
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={order.status}
+                    disabled={busyId === order.id}
+                    onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}
+                    className="px-3 py-1.5 rounded-lg border border-[var(--divider)] text-xs font-medium bg-[#f9f9f6] disabled:opacity-50"
+                  >
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{statusLabel[s]}</option>)}
+                  </select>
+
+                  {order.paymentStatus === 'paid' && (
+                    <button
+                      onClick={() => refund(order)}
+                      disabled={busyId === order.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                                 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw size={12} />
+                      {busyId === order.id ? 'Refunding…' : 'Refund'}
+                    </button>
+                  )}
+                  {order.paymentStatus === 'refunded' && (
+                    <span className="text-xs font-semibold text-red-600">Refunded</span>
+                  )}
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
