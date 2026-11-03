@@ -5,8 +5,9 @@ import {
   LogOut, Plus, Trash2, Pencil, Check, X,
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
   ListChecks, UserRound, Undo2, Receipt, RotateCcw,
+  DollarSign, ShoppingBag, Hourglass,
 } from 'lucide-react'
-import { mapOrderRow, statusLabel, itemCount } from '@/lib/orders'
+import { mapOrderRow, statusLabel, statusColor, itemCount } from '@/lib/orders'
 import type { Order, OrderStatus } from '@/lib/types'
 
 // ─── types ───────────────────────────────────────────────────────────────
@@ -133,34 +134,34 @@ export default function AdminPage() {
           </div>
 
           {/* Tabs — centered */}
-          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-sm mx-auto">
+          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-xs sm:max-w-sm mx-auto">
             <button onClick={() => setTab('tasks')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'tasks' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
               }`}>
               <ListChecks size={14} />
-              <span>Tasks</span>
+              <span className="hidden sm:inline">Tasks</span>
             </button>
             <button onClick={() => setTab('deli')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'deli' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
               }`}>
               <UtensilsCrossed size={14} />
-              <span>Deli</span>
+              <span className="hidden sm:inline">Deli</span>
             </button>
             <button onClick={() => setTab('hours')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'hours' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
               }`}>
               <Clock size={14} />
-              <span>Hours</span>
+              <span className="hidden sm:inline">Hours</span>
             </button>
             <button onClick={() => setTab('orders')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'orders' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
               }`}>
               <Receipt size={14} />
-              <span>Orders</span>
+              <span className="hidden sm:inline">Orders</span>
             </button>
           </div>
 
@@ -889,11 +890,15 @@ function HoursTable({ title, emoji, hours, onChange }: {
 // ─── ORDERS SECTION ───────────────────────────────────────────────────────
 const STATUS_OPTIONS: OrderStatus[] = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'payment_failed']
 
+const FILTERS = ['all', 'pending', 'paid', 'processing', 'shipped', 'delivered', 'refunded', 'cancelled'] as const
+type Filter = typeof FILTERS[number]
+
 function OrdersSection() {
   const [orders, setOrders] = useState<Order[] | null>(null)
   const [loadErr, setLoadErr] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionErr, setActionErr] = useState<string | null>(null)
+  const [filter, setFilter] = useState<Filter>('all')
 
   const load = () => {
     setLoadErr(null)
@@ -942,32 +947,70 @@ function OrdersSection() {
   if (loadErr) return <p className="text-center text-red-500 py-10">{loadErr}</p>
   if (!orders) return <p className="text-center text-[var(--tertiary)] py-10">Loading orders…</p>
 
+  const revenueCents = orders.filter(o => o.paymentStatus === 'paid').reduce((s, o) => s + o.totalCents, 0)
+  const needsActionCount = orders.filter(o => o.status === 'pending' || o.status === 'paid').length
+  const filteredOrders = filter === 'all'
+    ? orders
+    : orders.filter(o => filter === 'refunded' ? o.paymentStatus === 'refunded' : o.status === filter)
+
   return (
     <div>
-      <h2 className="font-bold text-lg text-[#1d1d1f] mb-4">Orders ({orders.length})</h2>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+        {[
+          { icon: DollarSign, label: 'Revenue', value: `$${(revenueCents / 100).toFixed(2)}` },
+          { icon: ShoppingBag, label: 'Orders', value: String(orders.length) },
+          { icon: Hourglass, label: 'Needs Action', value: String(needsActionCount) },
+        ].map(({ icon: Icon, label, value }) => (
+          <div key={label} className="bg-white border border-[var(--divider)] rounded-2xl p-3 sm:p-4 text-center">
+            <Icon size={16} className="mx-auto mb-1.5 text-[#1a2e1c]" />
+            <div className="font-bold text-base sm:text-lg text-[#1d1d1f] truncate">{value}</div>
+            <div className="text-[0.6875rem] sm:text-xs text-[var(--tertiary)] mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        {FILTERS.map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
+              filter === f ? 'bg-[#1a2e1c] text-white' : 'bg-[#f0f0ee] text-[var(--secondary)]'
+            }`}
+          >
+            {f === 'all' ? `All (${orders.length})` : f}
+          </button>
+        ))}
+      </div>
+
       {actionErr && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mb-4">
           {actionErr}
         </div>
       )}
-      {orders.length === 0 ? (
-        <p className="text-center text-[var(--tertiary)] py-10">No orders yet.</p>
+      {filteredOrders.length === 0 ? (
+        <p className="text-center text-[var(--tertiary)] py-10">No orders{filter !== 'all' ? ` matching "${filter}"` : ' yet'}.</p>
       ) : (
         <div className="space-y-3">
-          {orders.map(order => (
-            <details key={order.id} className="bg-white border border-[var(--divider)] rounded-2xl p-4 group">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
+          {filteredOrders.map(order => (
+            <details key={order.id} className="bg-white border border-[var(--divider)] rounded-2xl p-3 sm:p-4 group">
+              <summary className="list-none cursor-pointer flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono font-bold text-sm text-[#1d1d1f]">{order.id.slice(0, 8).toUpperCase()}</span>
-                    <span className="text-xs text-[var(--tertiary)]">{new Date(order.createdAt).toLocaleString()}</span>
+                    <span className={`text-[0.625rem] font-bold px-2 py-0.5 rounded-full ${statusColor[order.status]}`}>
+                      {statusLabel[order.status]}
+                    </span>
                   </div>
-                  <p className="text-sm text-[var(--secondary)] mt-0.5">{order.customerName} · {order.customerEmail}</p>
+                  <p className="text-xs text-[var(--tertiary)] mt-0.5">{new Date(order.createdAt).toLocaleString()}</p>
+                  <p className="text-sm text-[var(--secondary)] mt-1 truncate">{order.customerName} · {order.customerEmail}</p>
                   <p className="text-xs text-[var(--tertiary)] mt-0.5">{itemCount(order)} items</p>
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start flex-shrink-0 gap-1">
                   <p className="font-bold text-[#1d1d1f]">${(order.totalCents / 100).toFixed(2)}</p>
-                  <p className="text-xs text-[var(--tertiary)] mt-0.5 capitalize">{order.paymentStatus}</p>
+                  <p className="text-xs text-[var(--tertiary)] capitalize">{order.paymentStatus}</p>
                 </div>
               </summary>
 
