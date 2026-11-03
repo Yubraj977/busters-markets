@@ -58,8 +58,14 @@ export default function CheckoutPage() {
   const [placed, setPlaced] = useState(false)
   const { items, total, count, clearCart } = useCartStore()
 
-  const cartTotal = total()
-  const cartCount = count()
+  // The cart store persists to localStorage, so the server-rendered HTML always
+  // starts empty — don't trust cart-derived values until after client hydration,
+  // or React flags a hydration mismatch once the real cart loads.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
+  const cartTotal = mounted ? total() : 0
+  const cartCount = mounted ? count() : 0
   const tax = cartTotal * 0.085
   const delivery = cartTotal >= 35 ? 0 : 4.99
   const orderTotal = cartTotal + tax + delivery
