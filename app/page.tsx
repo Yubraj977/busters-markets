@@ -53,6 +53,7 @@ export default async function HomePage() {
   }
   const featured = products.slice(0, 8)
   const weeklyDeals = products.filter(p => p.isSale).slice(0, 4)
+  const starredCount = products.filter(p => p.isFresh).length
 
   const categoryCounts = new Map<string, number>()
   for (const p of products) {
@@ -234,7 +235,9 @@ export default async function HomePage() {
                               rounded-full px-4 py-2 shadow-lg flex items-center gap-2 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#a3a39a] animate-pulse" />
                 <p className="text-[0.6875rem] font-medium text-[#3a3a3c]">
-                  Restocked today · 200+ new items
+                  {starredCount > 0
+                    ? `${starredCount} starred ${starredCount === 1 ? 'item' : 'items'}`
+                    : 'Restocked today · fresh picks'}
                 </p>
               </div>
             </div>
