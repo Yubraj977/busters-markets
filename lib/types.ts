@@ -29,6 +29,7 @@ export interface Product {
   taxable?: boolean
   ebtEligible?: boolean
   ageRestricted?: boolean
+  minAge?: number
   isWeighed?: boolean
   isFresh?: boolean
 }

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Navbar from './Navbar'
 import Footer from './Footer'
 import CartDrawer from './CartDrawer'
+import AgeGateModal from './AgeGateModal'
 
 const BOARD_ROUTES = ['/deli/menu', '/notice/board']
 
@@ -22,6 +23,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
       <main className="flex-1">{children}</main>
       <Footer />
       <CartDrawer />
+      <AgeGateModal />
     </>
   )
 }

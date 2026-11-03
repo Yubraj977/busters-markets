@@ -3,16 +3,22 @@
 import { useState } from 'react'
 import { Plus, Minus, ShoppingCart, Check } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
+import { useAgeGateStore } from '@/store/ageGate'
 import { Product } from '@/lib/types'
 
 export default function AddToCartButton({ product }: { product: Product }) {
   const [added, setAdded] = useState(false)
   const { items, addItem, updateQty, removeItem } = useCartStore()
+  const requestAgeConfirmation = useAgeGateStore(s => s.request)
 
   const cartItem = items.find(i => i.product.id === product.id)
   const qty = cartItem?.quantity ?? 0
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
+    if (product.ageRestricted) {
+      const confirmed = await requestAgeConfirmation(product.minAge ?? 21, product.name)
+      if (!confirmed) return
+    }
     addItem(product)
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)

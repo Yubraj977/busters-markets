@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Minus, ShoppingCart, Star, Leaf } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
+import { useAgeGateStore } from '@/store/ageGate'
 import { Product } from '@/lib/types'
 import { clsx } from 'clsx'
 
@@ -16,6 +17,7 @@ interface Props {
 export default function ProductCard({ product, compact = false }: Props) {
   const [qty, setQty] = useState(0)
   const { addItem, items, updateQty, removeItem } = useCartStore()
+  const requestAgeConfirmation = useAgeGateStore(s => s.request)
 
   const cartItem = items.find(i => i.product.id === product.id)
   const cartQty = cartItem?.quantity ?? 0
@@ -24,8 +26,12 @@ export default function ProductCard({ product, compact = false }: Props) {
     ? Math.round((1 - product.price / product.comparePrice) * 100)
     : 0
 
-  const handleAdd = (e: React.MouseEvent) => {
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault()
+    if (product.ageRestricted) {
+      const confirmed = await requestAgeConfirmation(product.minAge ?? 21, product.name)
+      if (!confirmed) return
+    }
     addItem(product)
     setQty(1)
   }
@@ -70,6 +76,11 @@ export default function ProductCard({ product, compact = false }: Props) {
                            rounded-full flex items-center gap-0.5">
             <Leaf size={9} />
             Organic
+          </span>
+        )}
+        {product.ageRestricted && (
+          <span className="bg-forest-950 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+            {product.minAge ?? 21}+
           </span>
         )}
       </div>

@@ -19,7 +19,7 @@ export interface BackofficeInventoryItem {
   isWeighed: boolean
   taxable: boolean
   ebtEligible: boolean
-  ageRestricted: boolean
+  minAge: number | null
   depositAmount: number | null
   isFresh: boolean
 }
@@ -91,9 +91,11 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     ? toAbsolute(item.imageUrl)
     : images[0] ?? '/placeholder-product.svg'
 
+  const ageRestricted = item.minAge != null && item.minAge > 0
+
   const tags = [
     item.ebtEligible && 'ebt-eligible',
-    item.ageRestricted && 'age-restricted',
+    ageRestricted && 'age-restricted',
     item.isWeighed && 'sold-by-weight',
   ].filter((t): t is string => Boolean(t))
 
@@ -122,7 +124,8 @@ export function toProduct(item: BackofficeInventoryItem): Product {
     depositAmount: item.depositAmount ?? undefined,
     taxable: item.taxable,
     ebtEligible: item.ebtEligible,
-    ageRestricted: item.ageRestricted,
+    ageRestricted,
+    minAge: item.minAge ?? undefined,
     isWeighed: item.isWeighed,
     isFresh: item.isFresh,
   }

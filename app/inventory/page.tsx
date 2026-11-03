@@ -50,7 +50,7 @@ export default async function InventoryPage() {
                   item.isWeighed && 'Weighed',
                   item.taxable && 'Taxable',
                   item.ebtEligible && 'EBT',
-                  item.ageRestricted && '21+',
+                  item.minAge != null && item.minAge > 0 && `${item.minAge}+`,
                 ].filter(Boolean) as string[]
 
                 return (

@@ -38,15 +38,21 @@ function ProductsContent({ products }: { products: Product[] }) {
 
   const filtered = useMemo(() => {
     let result = [...products]
+    const query = q.trim().toLowerCase()
 
-    if (q) {
-      const lower = q.toLowerCase()
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(lower) ||
-        p.description.toLowerCase().includes(lower) ||
-        p.category.toLowerCase().includes(lower) ||
-        p.tags.some(t => t.toLowerCase().includes(lower))
-      )
+    if (query) {
+      const words = query.split(/\s+/).filter(Boolean)
+      const searchText = (p: typeof products[number]) =>
+        [p.name, p.brand ?? '', p.category, p.department ?? '', p.description, ...p.tags]
+          .join(' ')
+          .toLowerCase()
+
+      // All words must appear somewhere (order-independent), so "milk organic"
+      // still matches "Organic Whole Milk" -- forgiving without being fuzzy/surprising.
+      result = result.filter(p => {
+        const text = searchText(p)
+        return words.every(w => text.includes(w))
+      })
     }
 
     if (selectedCategory) {
@@ -65,6 +71,19 @@ function ProductsContent({ products }: { products: Product[] }) {
       case 'price-asc':  result.sort((a, b) => a.price - b.price); break
       case 'price-desc': result.sort((a, b) => b.price - a.price); break
       case 'rating':     result.sort((a, b) => b.rating - a.rating); break
+      default:
+        // "Relevance" — when searching, rank closer name matches first instead of
+        // leaving results in arbitrary catalog order.
+        if (query) {
+          const score = (p: typeof products[number]) => {
+            const name = p.name.toLowerCase()
+            if (name === query) return 3
+            if (name.startsWith(query)) return 2
+            if (name.includes(query)) return 1
+            return 0
+          }
+          result.sort((a, b) => score(b) - score(a))
+        }
     }
 
     return result
