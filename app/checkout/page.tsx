@@ -32,7 +32,7 @@ interface CloverInstance {
 }
 declare global {
   interface Window {
-    Clover?: new (appId: string) => CloverInstance
+    Clover?: new (appId: string, options?: { merchantId?: string }) => CloverInstance
   }
 }
 
@@ -93,9 +93,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (MOCK_CHECKOUT || step !== 2 || !cloverReady || fieldsMountedRef.current) return
     const appId = process.env.NEXT_PUBLIC_CLOVER_APP_ID
-    if (!window.Clover || !appId) return
+    const merchantId = process.env.NEXT_PUBLIC_CLOVER_MERCHANT_ID
+    if (!window.Clover || !appId || !merchantId) return
 
-    const clover = new window.Clover(appId)
+    const clover = new window.Clover(appId, { merchantId })
     cloverRef.current = clover
     const elements = clover.elements()
     elements.create('CARD_NUMBER').mount('#card-number')
