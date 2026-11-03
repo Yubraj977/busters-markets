@@ -102,6 +102,7 @@ export default function CheckoutPage() {
     elements.create('CARD_NUMBER').mount('#card-number')
     elements.create('CARD_DATE').mount('#card-date')
     elements.create('CARD_CVV').mount('#card-cvv')
+    elements.create('CARD_POSTAL_CODE').mount('#card-postal-code')
     fieldsMountedRef.current = true
   }, [step, cloverReady])
 
@@ -401,6 +402,10 @@ export default function CheckoutPage() {
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">CVV</label>
                       <div id="card-cvv" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus-within:border-forest-400 transition-colors" style={{ height: 42 }} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Billing ZIP</label>
+                      <div id="card-postal-code" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus-within:border-forest-400 transition-colors" style={{ height: 42 }} />
                     </div>
                   </>
                 )}
