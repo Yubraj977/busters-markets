@@ -268,6 +268,12 @@ function TasksSection({ me }: { me: StaffRole }) {
     setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
   }
 
+  const assignTo = async (todo: Todo, userId: string) => {
+    if (!userId) return
+    const updated = await patchTodo(todo.id, { assignedTo: userId, assignedBy: me.name })
+    setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
+  }
+
   const release = async (todo: Todo) => {
     const updated = await patchTodo(todo.id, { status: 'open' })
     setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
@@ -417,11 +423,21 @@ function TasksSection({ me }: { me: StaffRole }) {
           <TaskRow key={todo.id} todo={todo} employeeName={employeeName} me={me}
             onDelete={() => removeTask(todo)}
             actions={
-              <button onClick={() => pickUp(todo)}
-                className="w-full py-2.5 rounded-lg text-[0.8125rem] font-medium text-white active:scale-95 transition-all"
-                style={{ background: '#1e4023' }}>
-                Pick this up
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => pickUp(todo)}
+                  className="py-2.5 rounded-lg text-[0.8125rem] font-medium text-white active:scale-95 transition-all"
+                  style={{ background: '#1e4023' }}>
+                  Pick this up
+                </button>
+                <select
+                  value=""
+                  onChange={e => assignTo(todo, e.target.value)}
+                  className="px-2 py-2.5 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-white focus:outline-none focus:border-forest-400"
+                >
+                  <option value="" disabled>Assign to…</option>
+                  {staff?.filter(s => s.active).map(s => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
+                </select>
+              </div>
             } />
         ))}
         {open.length === 0 && <EmptyRow text="Nothing waiting — add a task above." />}
@@ -433,11 +449,19 @@ function TasksSection({ me }: { me: StaffRole }) {
           <TaskRow key={todo.id} todo={todo} employeeName={employeeName} me={me}
             onDelete={() => removeTask(todo)}
             actions={
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button onClick={() => release(todo)}
                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[0.8125rem] font-medium border border-[var(--divider)] text-[var(--secondary)] bg-white active:scale-95 transition-all">
                   <Undo2 size={13} /> Release
                 </button>
+                <select
+                  value=""
+                  onChange={e => assignTo(todo, e.target.value)}
+                  className="px-2 py-2.5 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-white focus:outline-none focus:border-forest-400"
+                >
+                  <option value="" disabled>Reassign…</option>
+                  {staff?.filter(s => s.active && s.user_id !== todo.assigned_to).map(s => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
+                </select>
                 <button onClick={() => markDone(todo)}
                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[0.8125rem] font-medium text-white active:scale-95 transition-all"
                   style={{ background: '#1e4023' }}>
