@@ -5,7 +5,7 @@ import {
   LogOut, Plus, Trash2, Pencil, Check, X,
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
   ListChecks, UserRound, Undo2, Receipt, RotateCcw,
-  DollarSign, ShoppingBag, Hourglass,
+  DollarSign, ShoppingBag, Hourglass, Users,
 } from 'lucide-react'
 import { mapOrderRow, statusLabel, statusColor, itemCount } from '@/lib/orders'
 import type { Order, OrderStatus } from '@/lib/types'
@@ -34,14 +34,33 @@ interface Category { id: string; name: string; order: number }
 interface Menu { categories: Category[]; items: MenuItem[] }
 
 type TodoStatus = 'open' | 'claimed' | 'done'
+type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
 interface Todo {
   id: string
   title: string
   notes: string | null
   status: TodoStatus
   claimed_by: string | null
+  assigned_to: string | null
+  assigned_by: string | null
+  priority: TaskPriority
+  due_date: string | null
   created_at: string
   completed_at: string | null
+}
+interface Employee {
+  id: string
+  name: string
+  pin: string | null
+  active: boolean
+  created_at: string
+}
+
+const PRIORITY_STYLE: Record<TaskPriority, string> = {
+  low: 'bg-gray-100 text-gray-600',
+  normal: 'bg-blue-50 text-blue-700',
+  high: 'bg-amber-100 text-amber-700',
+  urgent: 'bg-red-100 text-red-700',
 }
 
 const uid = () => crypto.randomUUID()
@@ -59,7 +78,7 @@ export default function AdminPage() {
   const [ready,  setReady]  = useState(false)
   const [pw,     setPw]     = useState('')
   const [pwErr,  setPwErr]  = useState('')
-  const [tab,    setTab]    = useState<'tasks' | 'deli' | 'hours' | 'orders'>('tasks')
+  const [tab,    setTab]    = useState<'tasks' | 'deli' | 'hours' | 'orders' | 'team'>('tasks')
 
   useEffect(() => {
     setAuthed(sessionStorage.getItem('bmAdmin') === '1')
@@ -134,7 +153,7 @@ export default function AdminPage() {
           </div>
 
           {/* Tabs — centered */}
-          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-xs sm:max-w-sm mx-auto">
+          <div className="flex items-center gap-1 bg-[#f0f0ee] rounded-xl p-1 flex-1 max-w-xs sm:max-w-md mx-auto">
             <button onClick={() => setTab('tasks')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
                 tab === 'tasks' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
@@ -163,6 +182,13 @@ export default function AdminPage() {
               <Receipt size={14} />
               <span className="hidden sm:inline">Orders</span>
             </button>
+            <button onClick={() => setTab('team')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[0.8125rem] font-semibold transition-all ${
+                tab === 'team' ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[var(--secondary)]'
+              }`}>
+              <Users size={14} />
+              <span className="hidden sm:inline">Team</span>
+            </button>
           </div>
 
           {/* Right actions */}
@@ -188,13 +214,15 @@ export default function AdminPage() {
         {tab === 'deli'   && <DeliSection />}
         {tab === 'hours'  && <HoursSection />}
         {tab === 'orders' && <OrdersSection />}
+        {tab === 'team'   && <TeamSection />}
       </div>
     </div>
   )
 }
 
 // ─── TASKS SECTION ────────────────────────────────────────────────────────
-const NAME_KEY = 'bmEmployeeName'
+const EMPLOYEE_ID_KEY = 'bmEmployeeId'
+const ADD_NEW_VALUE = '__add_new__'
 
 async function patchTodo(id: string, body: Record<string, unknown>) {
   const res = await fetch('/api/todos', {
@@ -205,13 +233,140 @@ async function patchTodo(id: string, body: Record<string, unknown>) {
   return res.json()
 }
 
+function isOverdue(todo: Todo) {
+  return !!todo.due_date && todo.status !== 'done' && todo.due_date < new Date().toISOString().slice(0, 10)
+}
+
+function useMe() {
+  const [employees, setEmployees] = useState<Employee[] | null>(null)
+  const [myId, setMyId] = useState('')
+  const [pinPrompt, setPinPrompt] = useState<{ id: string; pinDraft: string; error: string } | null>(null)
+
+  const loadEmployees = () => {
+    fetch('/api/employees').then(r => r.json()).then(setEmployees).catch(() => setEmployees([]))
+  }
+
+  useEffect(() => {
+    loadEmployees()
+    setMyId(localStorage.getItem(EMPLOYEE_ID_KEY) ?? '')
+  }, [])
+
+  const me = employees?.find(e => e.id === myId) ?? null
+
+  const selectMe = (id: string, employeesList: Employee[]) => {
+    const emp = employeesList.find(e => e.id === id)
+    if (!emp) return
+    if (emp.pin && sessionStorage.getItem(`pinOk:${id}`) !== '1') {
+      setPinPrompt({ id, pinDraft: '', error: '' })
+      return
+    }
+    localStorage.setItem(EMPLOYEE_ID_KEY, id)
+    setMyId(id)
+  }
+
+  const confirmPin = () => {
+    if (!pinPrompt || !employees) return
+    const emp = employees.find(e => e.id === pinPrompt.id)
+    if (!emp) return
+    if (pinPrompt.pinDraft === emp.pin) {
+      sessionStorage.setItem(`pinOk:${emp.id}`, '1')
+      localStorage.setItem(EMPLOYEE_ID_KEY, emp.id)
+      setMyId(emp.id)
+      setPinPrompt(null)
+    } else {
+      setPinPrompt({ ...pinPrompt, error: 'Wrong PIN', pinDraft: '' })
+    }
+  }
+
+  const addEmployee = async (name: string, pin: string) => {
+    const res = await fetch('/api/employees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, pin: pin || undefined }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { error: data.error ?? 'Could not add employee' }
+    const next = [...(employees ?? []), data]
+    setEmployees(next)
+    localStorage.setItem(EMPLOYEE_ID_KEY, data.id)
+    setMyId(data.id)
+    return {}
+  }
+
+  return { employees, me, myId, selectMe, pinPrompt, setPinPrompt, confirmPin, addEmployee }
+}
+
+function MePicker({ meState }: { meState: ReturnType<typeof useMe> }) {
+  const { employees, me, myId, selectMe, pinPrompt, setPinPrompt, confirmPin, addEmployee } = meState
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [addErr, setAddErr] = useState('')
+
+  if (employees === null) return <div className="h-7 w-32 bg-[#f0f0ee] rounded-full animate-pulse" />
+
+  if (adding) {
+    return (
+      <form
+        onSubmit={async e => {
+          e.preventDefault()
+          const result = await addEmployee(newName.trim(), newPin.trim())
+          if (result.error) { setAddErr(result.error); return }
+          setAdding(false); setNewName(''); setNewPin(''); setAddErr('')
+        }}
+        className="flex items-center gap-1.5 flex-wrap"
+      >
+        <input autoFocus value={newName} onChange={e => setNewName(e.target.value)} placeholder="Your name" required
+          className="w-28 px-2.5 py-1 rounded-full border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400" />
+        <input value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="PIN (optional)"
+          className="w-24 px-2.5 py-1 rounded-full border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400" />
+        <button type="submit" className="p-1.5 text-forest-700 bg-forest-50 rounded-full"><Check size={12} /></button>
+        <button type="button" onClick={() => { setAdding(false); setAddErr('') }} className="p-1.5 text-[var(--secondary)] bg-[#f5f5f7] rounded-full"><X size={12} /></button>
+        {addErr && <span className="text-[0.6875rem] text-red-500 w-full">{addErr}</span>}
+      </form>
+    )
+  }
+
+  if (pinPrompt) {
+    const emp = employees.find(e => e.id === pinPrompt.id)
+    return (
+      <form
+        onSubmit={e => { e.preventDefault(); confirmPin() }}
+        className="flex items-center gap-1.5"
+      >
+        <span className="text-[0.75rem] text-[var(--secondary)]">PIN for {emp?.name}:</span>
+        <input autoFocus type="password" inputMode="numeric" value={pinPrompt.pinDraft}
+          onChange={e => setPinPrompt({ ...pinPrompt, pinDraft: e.target.value.replace(/\D/g, '').slice(0, 4), error: '' })}
+          className="w-16 px-2.5 py-1 rounded-full border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400" />
+        <button type="submit" className="p-1.5 text-forest-700 bg-forest-50 rounded-full"><Check size={12} /></button>
+        <button type="button" onClick={() => setPinPrompt(null)} className="p-1.5 text-[var(--secondary)] bg-[#f5f5f7] rounded-full"><X size={12} /></button>
+        {pinPrompt.error && <span className="text-[0.6875rem] text-red-500">{pinPrompt.error}</span>}
+      </form>
+    )
+  }
+
+  return (
+    <select
+      value={myId}
+      onChange={e => e.target.value === ADD_NEW_VALUE ? setAdding(true) : selectMe(e.target.value, employees)}
+      className="px-2.5 py-1 rounded-full bg-[#f0f0ee] text-[0.75rem] font-medium text-[var(--secondary)] border-none focus:outline-none cursor-pointer"
+    >
+      <option value="" disabled>{me ? me.name : 'Who are you?'}</option>
+      {employees.filter(e => e.active).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+      <option value={ADD_NEW_VALUE}>+ Add myself</option>
+    </select>
+  )
+}
+
 function TasksSection() {
+  const meState = useMe()
+  const { me, employees } = meState
   const [todos,    setTodos]    = useState<Todo[] | null>(null)
-  const [name,     setName]     = useState('')
-  const [editName, setEditName] = useState(false)
-  const [nameDraft,setNameDraft]= useState('')
   const [newTitle, setNewTitle] = useState('')
   const [newNotes, setNewNotes] = useState('')
+  const [newPriority, setNewPriority] = useState<TaskPriority>('normal')
+  const [newDueDate, setNewDueDate] = useState('')
+  const [newAssignTo, setNewAssignTo] = useState('')
   const [adding,   setAdding]   = useState(false)
   const [toast,    setToast]    = useState<string | null>(null)
   const [loadErr,  setLoadErr]  = useState<string | null>(null)
@@ -224,20 +379,11 @@ function TasksSection() {
       .catch(() => setLoadErr('Could not load tasks. Check your connection and try again.'))
   }
 
-  useEffect(() => {
-    setName(localStorage.getItem(NAME_KEY) ?? '')
-    load()
-  }, [])
+  useEffect(load, [])
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000) }
 
-  const saveName = (e: React.FormEvent) => {
-    e.preventDefault()
-    const n = nameDraft.trim()
-    if (!n) return
-    localStorage.setItem(NAME_KEY, n)
-    setName(n); setEditName(false)
-  }
+  const employeeName = (id: string | null) => employees?.find(e => e.id === id)?.name ?? null
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -245,23 +391,24 @@ function TasksSection() {
     const res = await fetch('/api/todos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle.trim(), notes: newNotes.trim() || undefined }),
+      body: JSON.stringify({
+        title: newTitle.trim(),
+        notes: newNotes.trim() || undefined,
+        priority: newPriority,
+        dueDate: newDueDate || undefined,
+        assignedTo: newAssignTo || undefined,
+        assignedBy: newAssignTo ? (me?.name ?? 'Admin') : undefined,
+      }),
     })
     const created = await res.json()
     setTodos(t => [...(t ?? []), created])
-    setNewTitle(''); setNewNotes(''); setAdding(false); flash('Task added')
+    setNewTitle(''); setNewNotes(''); setNewPriority('normal'); setNewDueDate(''); setNewAssignTo(''); setAdding(false)
+    flash('Task added')
   }
 
   const pickUp = async (todo: Todo) => {
-    let who = name
-    if (!who) {
-      const typed = prompt('Your name?')?.trim()
-      if (!typed) return
-      who = typed
-      localStorage.setItem(NAME_KEY, who)
-      setName(who)
-    }
-    const updated = await patchTodo(todo.id, { status: 'claimed', claimedBy: who })
+    if (!me) { flash('Pick yourself from the list above first'); return }
+    const updated = await patchTodo(todo.id, { assignedTo: me.id })
     setTodos(t => t!.map(x => x.id === todo.id ? updated : x))
   }
 
@@ -310,23 +457,10 @@ function TasksSection() {
   return (
     <div>
       {/* Header: who's working + add task */}
-      <div className="flex items-center justify-between mb-5 gap-2">
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-xl font-bold text-[#1d1d1f] tracking-tight">Tasks</h2>
-          {!editName ? (
-            <button onClick={() => { setNameDraft(name); setEditName(true) }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#f0f0ee] text-[0.75rem] font-medium text-[var(--secondary)] hover:bg-[#e6e6e2] transition-colors flex-shrink-0">
-              <UserRound size={12} />
-              {name ? name : 'Set your name'}
-            </button>
-          ) : (
-            <form onSubmit={saveName} className="flex items-center gap-1.5 flex-shrink-0">
-              <input autoFocus value={nameDraft} onChange={e => setNameDraft(e.target.value)}
-                placeholder="Your name" className="w-28 px-2.5 py-1 rounded-full border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400" />
-              <button type="submit" className="p-1.5 text-forest-700 bg-forest-50 rounded-full"><Check size={12} /></button>
-              <button type="button" onClick={() => setEditName(false)} className="p-1.5 text-[var(--secondary)] bg-[#f5f5f7] rounded-full"><X size={12} /></button>
-            </form>
-          )}
+          <MePicker meState={meState} />
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
@@ -346,6 +480,22 @@ function TasksSection() {
             <input value={newNotes} onChange={e => setNewNotes(e.target.value)}
               placeholder="Notes (optional)"
               className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--divider)] text-[0.875rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <select value={newPriority} onChange={e => setNewPriority(e.target.value as TaskPriority)}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400">
+                <option value="low">Low priority</option>
+                <option value="normal">Normal priority</option>
+                <option value="high">High priority</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              <select value={newAssignTo} onChange={e => setNewAssignTo(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400">
+                <option value="">Leave open</option>
+                {employees?.filter(e => e.active).map(e => <option key={e.id} value={e.id}>Assign to {e.name}</option>)}
+              </select>
+            </div>
             <div className="flex gap-2">
               <button type="submit"
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-white text-[0.8125rem] font-medium" style={{ background: '#1a2e1c' }}>
@@ -363,7 +513,7 @@ function TasksSection() {
       {/* Open */}
       <TaskGroup label="To Do" count={open.length}>
         {open.map(todo => (
-          <TaskRow key={todo.id} todo={todo}
+          <TaskRow key={todo.id} todo={todo} employeeName={employeeName}
             onDelete={() => removeTask(todo)}
             actions={
               <button onClick={() => pickUp(todo)}
@@ -379,7 +529,7 @@ function TasksSection() {
       {/* Claimed / in progress */}
       <TaskGroup label="In Progress" count={claimed.length}>
         {claimed.map(todo => (
-          <TaskRow key={todo.id} todo={todo}
+          <TaskRow key={todo.id} todo={todo} employeeName={employeeName}
             onDelete={() => removeTask(todo)}
             actions={
               <div className="grid grid-cols-2 gap-2">
@@ -402,7 +552,7 @@ function TasksSection() {
       {done.length > 0 && (
         <TaskGroup label="Done" count={done.length}>
           {done.map(todo => (
-            <TaskRow key={todo.id} todo={todo} dimmed
+            <TaskRow key={todo.id} todo={todo} employeeName={employeeName} dimmed
               onDelete={() => removeTask(todo)}
               actions={
                 <button onClick={() => reopen(todo)}
@@ -443,25 +593,43 @@ function EmptyRow({ text }: { text: string }) {
   )
 }
 
-function TaskRow({ todo, actions, onDelete, dimmed }: {
+function TaskRow({ todo, actions, onDelete, dimmed, employeeName }: {
   todo: Todo; actions: React.ReactNode; onDelete: () => void; dimmed?: boolean
+  employeeName: (id: string | null) => string | null
 }) {
+  const assignee = employeeName(todo.assigned_to)
+  const overdue = isOverdue(todo)
   return (
-    <div className={`bg-white rounded-xl border border-[var(--divider)] shadow-sm px-3.5 py-3.5 ${dimmed ? 'opacity-60' : ''}`}>
+    <div className={`bg-white rounded-xl border shadow-sm px-3.5 py-3.5 ${dimmed ? 'opacity-60' : ''} ${overdue ? 'border-red-200' : 'border-[var(--divider)]'}`}>
       <div className="flex items-start gap-3 mb-2.5">
         <div className="flex-1 min-w-0">
-          <p className={`font-medium text-[0.9375rem] leading-snug text-[#1d1d1f] ${todo.status === 'done' ? 'line-through' : ''}`}>
-            {todo.title}
-          </p>
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+            <p className={`font-medium text-[0.9375rem] leading-snug text-[#1d1d1f] ${todo.status === 'done' ? 'line-through' : ''}`}>
+              {todo.title}
+            </p>
+            {todo.priority !== 'normal' && (
+              <span className={`text-[0.625rem] font-bold px-1.5 py-0.5 rounded-full capitalize ${PRIORITY_STYLE[todo.priority]}`}>
+                {todo.priority}
+              </span>
+            )}
+          </div>
           {todo.notes && (
             <p className="text-[0.8125rem] text-[var(--secondary)] mt-0.5">{todo.notes}</p>
           )}
-          {todo.claimed_by && (
-            <p className="text-[0.75rem] text-forest-700 mt-1 flex items-center gap-1">
-              <UserRound size={11} />
-              {todo.status === 'done' ? `Done by ${todo.claimed_by}` : `Claimed by ${todo.claimed_by}`}
-            </p>
-          )}
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            {assignee && (
+              <p className="text-[0.75rem] text-forest-700 flex items-center gap-1">
+                <UserRound size={11} />
+                {todo.status === 'done' ? `Done by ${assignee}` : `${todo.assigned_by ? 'Assigned to' : 'Claimed by'} ${assignee}`}
+              </p>
+            )}
+            {todo.due_date && (
+              <p className={`text-[0.75rem] flex items-center gap-1 ${overdue ? 'text-red-600 font-semibold' : 'text-[var(--tertiary)]'}`}>
+                <Clock size={11} />
+                {overdue ? 'Overdue — ' : 'Due '}{new Date(todo.due_date + 'T00:00').toLocaleDateString()}
+              </p>
+            )}
+          </div>
         </div>
         <button onClick={onDelete}
           className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors flex-shrink-0">
@@ -1057,6 +1225,149 @@ function OrdersSection() {
                 </div>
               </div>
             </details>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── TEAM SECTION ─────────────────────────────────────────────────────────
+interface EmployeeStats {
+  employee: Employee
+  total: number
+  completed: number
+  inProgress: number
+  overdue: number
+  completionRate: number
+  avgCompletionHours: number | null
+  recent: Todo[]
+}
+
+function computeStats(employees: Employee[], todos: Todo[]): EmployeeStats[] {
+  return employees.map(employee => {
+    const mine = todos.filter(t => t.assigned_to === employee.id)
+    const completed = mine.filter(t => t.status === 'done')
+    const inProgress = mine.filter(t => t.status === 'claimed')
+    const overdue = mine.filter(isOverdue)
+
+    const durations = completed
+      .filter(t => t.completed_at)
+      .map(t => (new Date(t.completed_at!).getTime() - new Date(t.created_at).getTime()) / 3600000)
+    const avgCompletionHours = durations.length > 0
+      ? durations.reduce((s, d) => s + d, 0) / durations.length
+      : null
+
+    const recent = [...mine].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5)
+
+    return {
+      employee,
+      total: mine.length,
+      completed: completed.length,
+      inProgress: inProgress.length,
+      overdue: overdue.length,
+      completionRate: mine.length > 0 ? Math.round((completed.length / mine.length) * 100) : 0,
+      avgCompletionHours,
+      recent,
+    }
+  })
+}
+
+function formatDuration(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)}m`
+  if (hours < 48) return `${hours.toFixed(1)}h`
+  return `${(hours / 24).toFixed(1)}d`
+}
+
+function TeamSection() {
+  const [employees, setEmployees] = useState<Employee[] | null>(null)
+  const [todos, setTodos] = useState<Todo[] | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/employees').then(r => r.json()),
+      fetch('/api/todos').then(r => r.json()),
+    ]).then(([e, t]) => { setEmployees(e); setTodos(t) })
+  }, [])
+
+  if (employees === null || todos === null) {
+    return <p className="text-center text-[var(--tertiary)] py-10">Loading team…</p>
+  }
+
+  const stats = computeStats(employees.filter(e => e.active), todos)
+    .sort((a, b) => b.total - a.total)
+
+  return (
+    <div>
+      <h2 className="font-bold text-lg text-[#1d1d1f] mb-4">Team Accountability</h2>
+      {stats.length === 0 ? (
+        <p className="text-center text-[var(--tertiary)] py-10">No employees yet — add yourself from the Tasks tab.</p>
+      ) : (
+        <div className="space-y-3">
+          {stats.map(s => (
+            <div key={s.employee.id} className="bg-white border border-[var(--divider)] rounded-2xl p-4">
+              <button
+                onClick={() => setExpanded(expanded === s.employee.id ? null : s.employee.id)}
+                className="w-full flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-forest-100 text-forest-800 font-bold flex items-center justify-center flex-shrink-0">
+                    {s.employee.name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="font-semibold text-[#1d1d1f] truncate">{s.employee.name}</p>
+                    <p className="text-xs text-[var(--tertiary)]">{s.total} task{s.total === 1 ? '' : 's'} total</p>
+                  </div>
+                </div>
+                <ChevronDown size={16} className={`text-[var(--tertiary)] flex-shrink-0 transition-transform ${expanded === s.employee.id ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                {[
+                  { label: 'Completed', value: s.completed, color: 'text-forest-700' },
+                  { label: 'In Progress', value: s.inProgress, color: 'text-blue-700' },
+                  { label: 'Overdue', value: s.overdue, color: s.overdue > 0 ? 'text-red-600' : 'text-[var(--tertiary)]' },
+                  { label: 'Completion', value: `${s.completionRate}%`, color: 'text-[#1d1d1f]' },
+                ].map(stat => (
+                  <div key={stat.label} className="text-center py-2 rounded-lg bg-[#f9f9f6]">
+                    <div className={`font-bold text-sm ${stat.color}`}>{stat.value}</div>
+                    <div className="text-[0.625rem] text-[var(--tertiary)] mt-0.5">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {expanded === s.employee.id && (
+                <div className="mt-3 pt-3 border-t border-[var(--divider)]">
+                  {s.avgCompletionHours != null && (
+                    <p className="text-xs text-[var(--secondary)] mb-2">
+                      Avg. time to complete a task: <strong>{formatDuration(s.avgCompletionHours)}</strong>
+                    </p>
+                  )}
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--tertiary)] mb-1.5">Recent tasks</p>
+                  {s.recent.length === 0 ? (
+                    <p className="text-xs text-[var(--tertiary)]">No tasks yet.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {s.recent.map(t => (
+                        <div key={t.id} className="flex items-center justify-between text-xs gap-2">
+                          <span className={`truncate ${t.status === 'done' ? 'text-[var(--tertiary)] line-through' : 'text-[#1d1d1f]'}`}>
+                            {t.title}
+                          </span>
+                          <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-full font-medium ${
+                            t.status === 'done' ? 'bg-forest-50 text-forest-700'
+                            : t.status === 'claimed' ? 'bg-blue-50 text-blue-700'
+                            : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {t.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
