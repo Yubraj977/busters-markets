@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers'
+import { getMyStaffRole } from '@/lib/staff-roles'
 
+// Orders/refunds require the real "admin" role (not just any logged-in staff
+// member) -- same bar as the Orders tab itself being hidden from plain staff.
 export async function isAdminRequest(): Promise<boolean> {
-  const correct = process.env.ADMIN_PASSWORD
-  if (!correct) return false
-  const cookieStore = await cookies()
-  return cookieStore.get('bm_admin')?.value === correct
+  const me = await getMyStaffRole()
+  return me?.role === 'admin'
 }
