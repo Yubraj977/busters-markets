@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { Package, MapPin, Heart, Settings, ChevronRight, ShoppingBag } from 'lucide-react'
+import { Package, MapPin, Heart, Settings, ChevronRight, ShoppingBag, Store } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { mapOrderRow, statusColor, statusLabel, itemCount } from '@/lib/orders'
+import { getMyStaffRole } from '@/lib/staff-roles'
 import SignOutButton from '@/components/account/SignOutButton'
 
 const quickLinks = [
@@ -14,6 +15,11 @@ const quickLinks = [
 export default async function AccountPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const staffRole = await getMyStaffRole()
+
+  const links = staffRole
+    ? [{ icon: Store, label: 'Store Dashboard', sub: `Tasks, orders & more (${staffRole.role})`, href: '/bm-admin' }, ...quickLinks]
+    : quickLinks
 
   const [recentOrdersResult, orderCountResult, itemsResult] = user
     ? await Promise.all([
@@ -109,7 +115,7 @@ export default async function AccountPage() {
         <div>
           <h2 className="font-display font-bold text-xl text-forest-900 mb-4">My Account</h2>
           <div className="space-y-2">
-            {quickLinks.map(({ icon: Icon, label, sub, href }) => (
+            {links.map(({ icon: Icon, label, sub, href }) => (
               <Link
                 key={label}
                 href={href}
