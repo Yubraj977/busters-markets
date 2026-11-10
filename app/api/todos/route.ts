@@ -10,6 +10,44 @@ function supabase() {
   )
 }
 
+const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent']
+const VALID_CATEGORIES = ['general', 'deli', 'stocking', 'cleaning', 'register', 'other']
+const VALID_RECURRENCE = ['daily', 'weekly']
+
+interface TodoRow {
+  id: string
+  title: string
+  notes: string | null
+  status: string
+  assigned_to: string | null
+  assigned_by: string | null
+  priority: string
+  category: string
+  recurrence: string | null
+  due_date: string | null
+}
+
+function nextDueDate(dueDate: string | null, recurrence: string): string {
+  const base = dueDate ? new Date(dueDate + 'T00:00') : new Date()
+  base.setDate(base.getDate() + (recurrence === 'weekly' ? 7 : 1))
+  return base.toISOString().slice(0, 10)
+}
+
+async function spawnNextOccurrence(row: TodoRow) {
+  if (!row.recurrence) return
+  await supabase().from('todos').insert({
+    title: row.title,
+    notes: row.notes,
+    status: row.assigned_to ? 'claimed' : 'open',
+    assigned_to: row.assigned_to,
+    assigned_by: row.assigned_by,
+    priority: row.priority,
+    category: row.category,
+    recurrence: row.recurrence,
+    due_date: nextDueDate(row.due_date, row.recurrence),
+  })
+}
+
 export async function GET() {
   try {
     const { data, error } = await supabase()
@@ -24,16 +62,20 @@ export async function GET() {
   }
 }
 
-const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent']
-
 export async function POST(req: Request) {
   try {
-    const { title, notes, assignedTo, assignedBy, priority, dueDate } = await req.json()
+    const { title, notes, assignedTo, assignedBy, priority, dueDate, category, recurrence } = await req.json()
     if (!title || !String(title).trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
     if (priority && !VALID_PRIORITIES.includes(priority)) {
       return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+    }
+    if (category && !VALID_CATEGORIES.includes(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+    }
+    if (recurrence && !VALID_RECURRENCE.includes(recurrence)) {
+      return NextResponse.json({ error: 'Invalid recurrence' }, { status: 400 })
     }
 
     const { data, error } = await supabase()
@@ -45,6 +87,8 @@ export async function POST(req: Request) {
         assigned_by: assignedTo && assignedBy ? String(assignedBy).trim() : null,
         status: assignedTo ? 'claimed' : 'open',
         priority: priority ?? 'normal',
+        category: category ?? 'general',
+        recurrence: recurrence || null,
         due_date: dueDate || null,
       })
       .select()
@@ -60,12 +104,18 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const { id, status, assignedTo, assignedBy, priority, dueDate } = await req.json()
+    const { id, status, assignedTo, assignedBy, priority, dueDate, category, recurrence } = await req.json()
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 })
     }
     if (priority && !VALID_PRIORITIES.includes(priority)) {
       return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+    }
+    if (category && !VALID_CATEGORIES.includes(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+    }
+    if (recurrence !== undefined && recurrence && !VALID_RECURRENCE.includes(recurrence)) {
+      return NextResponse.json({ error: 'Invalid recurrence' }, { status: 400 })
     }
 
     const update: Record<string, unknown> = {}
@@ -80,6 +130,8 @@ export async function PATCH(req: Request) {
       if (assignedTo && !status) update.status = 'claimed'
     }
     if (priority) update.priority = priority
+    if (category) update.category = category
+    if (recurrence !== undefined) update.recurrence = recurrence || null
     if (dueDate !== undefined) update.due_date = dueDate || null
 
     const { data, error } = await supabase()
@@ -90,6 +142,11 @@ export async function PATCH(req: Request) {
       .single()
 
     if (error) throw error
+
+    if (status === 'done') {
+      await spawnNextOccurrence(data as TodoRow)
+    }
+
     return NextResponse.json(data)
   } catch (err) {
     console.error('todos PATCH:', err)

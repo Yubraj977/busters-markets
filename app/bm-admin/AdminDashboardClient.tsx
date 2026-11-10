@@ -7,6 +7,7 @@ import {
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
   ListChecks, UserRound, Undo2, Receipt, RotateCcw,
   DollarSign, ShoppingBag, Hourglass, Users, UserPlus,
+  Repeat, MessageCircle, Send,
 } from 'lucide-react'
 import { mapOrderRow, statusLabel, statusColor, itemCount } from '@/lib/orders'
 import type { Order, OrderStatus } from '@/lib/types'
@@ -37,6 +38,8 @@ interface Menu { categories: Category[]; items: MenuItem[] }
 
 type TodoStatus = 'open' | 'claimed' | 'done'
 type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
+type TaskCategory = 'general' | 'deli' | 'stocking' | 'cleaning' | 'register' | 'other'
+type TaskRecurrence = 'daily' | 'weekly'
 interface Todo {
   id: string
   title: string
@@ -46,6 +49,8 @@ interface Todo {
   assigned_to: string | null
   assigned_by: string | null
   priority: TaskPriority
+  category: TaskCategory
+  recurrence: TaskRecurrence | null
   due_date: string | null
   created_at: string
   completed_at: string | null
@@ -56,12 +61,28 @@ interface StaffListItem {
   role: 'staff' | 'admin'
   active: boolean
 }
+interface TodoComment {
+  id: string
+  todo_id: string
+  author: string
+  body: string
+  created_at: string
+}
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
   low: 'bg-gray-100 text-gray-600',
   normal: 'bg-blue-50 text-blue-700',
   high: 'bg-amber-100 text-amber-700',
   urgent: 'bg-red-100 text-red-700',
+}
+
+const CATEGORY_LABEL: Record<TaskCategory, string> = {
+  general: 'General',
+  deli: 'Deli',
+  stocking: 'Stocking',
+  cleaning: 'Cleaning',
+  register: 'Register',
+  other: 'Other',
 }
 
 const uid = () => crypto.randomUUID()
@@ -195,9 +216,14 @@ function TasksSection({ me }: { me: StaffRole }) {
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal')
   const [newDueDate, setNewDueDate] = useState('')
   const [newAssignTo, setNewAssignTo] = useState('')
+  const [newCategory, setNewCategory] = useState<TaskCategory>('general')
+  const [newRecurrence, setNewRecurrence] = useState<TaskRecurrence | ''>('')
   const [adding,   setAdding]   = useState(false)
   const [toast,    setToast]    = useState<string | null>(null)
   const [loadErr,  setLoadErr]  = useState<string | null>(null)
+  const [filterCategory, setFilterCategory] = useState<TaskCategory | 'all'>('all')
+  const [filterAssignee, setFilterAssignee] = useState<string | 'all'>('all')
+  const [sortBy, setSortBy] = useState<'created' | 'priority' | 'dueDate'>('created')
 
   const load = () => {
     setLoadErr(null)
@@ -223,6 +249,8 @@ function TasksSection({ me }: { me: StaffRole }) {
         title: newTitle.trim(),
         notes: newNotes.trim() || undefined,
         priority: newPriority,
+        category: newCategory,
+        recurrence: newRecurrence || undefined,
         dueDate: newDueDate || undefined,
         assignedTo: newAssignTo || undefined,
         assignedBy: newAssignTo ? me.name : undefined,
@@ -230,7 +258,8 @@ function TasksSection({ me }: { me: StaffRole }) {
     })
     const created = await res.json()
     setTodos(t => [...(t ?? []), created])
-    setNewTitle(''); setNewNotes(''); setNewPriority('normal'); setNewDueDate(''); setNewAssignTo(''); setAdding(false)
+    setNewTitle(''); setNewNotes(''); setNewPriority('normal'); setNewCategory('general')
+    setNewRecurrence(''); setNewDueDate(''); setNewAssignTo(''); setAdding(false)
     flash('Task added')
   }
 
@@ -277,9 +306,21 @@ function TasksSection({ me }: { me: StaffRole }) {
 
   if (todos === null) return <div className="text-center py-16 text-[var(--secondary)]">Loading tasks…</div>
 
-  const open    = todos.filter(t => t.status === 'open')
-  const claimed = todos.filter(t => t.status === 'claimed')
-  const done    = todos.filter(t => t.status === 'done')
+  const priorityRank: Record<TaskPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
+  const sortTasks = (list: Todo[]) => [...list].sort((a, b) => {
+    if (sortBy === 'priority') return priorityRank[a.priority] - priorityRank[b.priority]
+    if (sortBy === 'dueDate') return (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')
+    return a.created_at.localeCompare(b.created_at)
+  })
+
+  const filtered = todos.filter(t =>
+    (filterCategory === 'all' || t.category === filterCategory) &&
+    (filterAssignee === 'all' || t.assigned_to === filterAssignee)
+  )
+
+  const open    = sortTasks(filtered.filter(t => t.status === 'open'))
+  const claimed = sortTasks(filtered.filter(t => t.status === 'claimed'))
+  const done    = sortTasks(filtered.filter(t => t.status === 'done'))
 
   return (
     <div>
@@ -312,12 +353,22 @@ function TasksSection({ me }: { me: StaffRole }) {
                 <option value="high">High priority</option>
                 <option value="urgent">Urgent</option>
               </select>
-              <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              <select value={newCategory} onChange={e => setNewCategory(e.target.value as TaskCategory)}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400">
+                {Object.entries(CATEGORY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
               <select value={newAssignTo} onChange={e => setNewAssignTo(e.target.value)}
                 className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400">
                 <option value="">Leave open</option>
                 {staff?.filter(s => s.active).map(s => <option key={s.user_id} value={s.user_id}>Assign to {s.name}</option>)}
+              </select>
+              <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+              <select value={newRecurrence} onChange={e => setNewRecurrence(e.target.value as TaskRecurrence | '')}
+                className="px-3 py-2 rounded-lg border border-[var(--divider)] text-[0.8125rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400">
+                <option value="">Doesn't repeat</option>
+                <option value="daily">Repeats daily</option>
+                <option value="weekly">Repeats weekly</option>
               </select>
             </div>
             <div className="flex gap-2">
@@ -334,10 +385,36 @@ function TasksSection({ me }: { me: StaffRole }) {
         </div>
       )}
 
+      {/* Filter / sort bar */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value as TaskCategory | 'all')}
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400">
+          <option value="all">All categories</option>
+          {Object.entries(CATEGORY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400">
+          <option value="all">Everyone</option>
+          {staff?.map(s => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
+        </select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--divider)] text-[0.75rem] bg-white focus:outline-none focus:border-forest-400">
+          <option value="created">Sort: Newest</option>
+          <option value="priority">Sort: Priority</option>
+          <option value="dueDate">Sort: Due date</option>
+        </select>
+        {(filterCategory !== 'all' || filterAssignee !== 'all') && (
+          <button onClick={() => { setFilterCategory('all'); setFilterAssignee('all') }}
+            className="text-[0.75rem] text-ember font-semibold hover:text-red-700">
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {/* Open */}
       <TaskGroup label="To Do" count={open.length}>
         {open.map(todo => (
-          <TaskRow key={todo.id} todo={todo} employeeName={employeeName}
+          <TaskRow key={todo.id} todo={todo} employeeName={employeeName} me={me}
             onDelete={() => removeTask(todo)}
             actions={
               <button onClick={() => pickUp(todo)}
@@ -353,7 +430,7 @@ function TasksSection({ me }: { me: StaffRole }) {
       {/* Claimed / in progress */}
       <TaskGroup label="In Progress" count={claimed.length}>
         {claimed.map(todo => (
-          <TaskRow key={todo.id} todo={todo} employeeName={employeeName}
+          <TaskRow key={todo.id} todo={todo} employeeName={employeeName} me={me}
             onDelete={() => removeTask(todo)}
             actions={
               <div className="grid grid-cols-2 gap-2">
@@ -376,7 +453,7 @@ function TasksSection({ me }: { me: StaffRole }) {
       {done.length > 0 && (
         <TaskGroup label="Done" count={done.length}>
           {done.map(todo => (
-            <TaskRow key={todo.id} todo={todo} employeeName={employeeName} dimmed
+            <TaskRow key={todo.id} todo={todo} employeeName={employeeName} me={me} dimmed
               onDelete={() => removeTask(todo)}
               actions={
                 <button onClick={() => reopen(todo)}
@@ -417,12 +494,14 @@ function EmptyRow({ text }: { text: string }) {
   )
 }
 
-function TaskRow({ todo, actions, onDelete, dimmed, employeeName }: {
+function TaskRow({ todo, actions, onDelete, dimmed, employeeName, me }: {
   todo: Todo; actions: React.ReactNode; onDelete: () => void; dimmed?: boolean
   employeeName: (id: string | null) => string | null
+  me: StaffRole
 }) {
   const assignee = employeeName(todo.assigned_to)
   const overdue = isOverdue(todo)
+  const [showComments, setShowComments] = useState(false)
   return (
     <div className={`bg-white rounded-xl border shadow-sm px-3.5 py-3.5 ${dimmed ? 'opacity-60' : ''} ${overdue ? 'border-red-200' : 'border-[var(--divider)]'}`}>
       <div className="flex items-start gap-3 mb-2.5">
@@ -434,6 +513,16 @@ function TaskRow({ todo, actions, onDelete, dimmed, employeeName }: {
             {todo.priority !== 'normal' && (
               <span className={`text-[0.625rem] font-bold px-1.5 py-0.5 rounded-full capitalize ${PRIORITY_STYLE[todo.priority]}`}>
                 {todo.priority}
+              </span>
+            )}
+            {todo.category !== 'general' && (
+              <span className="text-[0.625rem] font-bold px-1.5 py-0.5 rounded-full bg-forest-50 text-forest-700">
+                {CATEGORY_LABEL[todo.category]}
+              </span>
+            )}
+            {todo.recurrence && (
+              <span className="text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 flex items-center gap-0.5" title={`Repeats ${todo.recurrence}`}>
+                <Repeat size={9} /> {todo.recurrence}
               </span>
             )}
           </div>
@@ -461,6 +550,66 @@ function TaskRow({ todo, actions, onDelete, dimmed, employeeName }: {
         </button>
       </div>
       {actions}
+      <button onClick={() => setShowComments(v => !v)}
+        className="flex items-center gap-1 mt-2.5 text-[0.75rem] text-[var(--tertiary)] hover:text-forest-700 transition-colors">
+        <MessageCircle size={12} />
+        {showComments ? 'Hide comments' : 'Comments'}
+      </button>
+      {showComments && <CommentThread todoId={todo.id} me={me} />}
+    </div>
+  )
+}
+
+function CommentThread({ todoId, me }: { todoId: string; me: StaffRole }) {
+  const [comments, setComments] = useState<TodoComment[] | null>(null)
+  const [body, setBody] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const load = () => {
+    fetch(`/api/todos/${todoId}/comments`).then(r => r.json()).then(setComments).catch(() => setComments([]))
+  }
+
+  useEffect(load, [todoId])
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!body.trim()) return
+    setSending(true)
+    await fetch(`/api/todos/${todoId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: me.name, body: body.trim() }),
+    })
+    setBody('')
+    setSending(false)
+    load()
+  }
+
+  return (
+    <div className="mt-2.5 pt-2.5 border-t border-[var(--divider)]">
+      {comments === null ? (
+        <p className="text-[0.75rem] text-[var(--tertiary)]">Loading…</p>
+      ) : comments.length === 0 ? (
+        <p className="text-[0.75rem] text-[var(--tertiary)]">No comments yet.</p>
+      ) : (
+        <div className="space-y-1.5 mb-2">
+          {comments.map(c => (
+            <div key={c.id} className="text-[0.75rem]">
+              <span className="font-semibold text-[#1d1d1f]">{c.author}</span>
+              <span className="text-[var(--tertiary)]"> · {new Date(c.created_at).toLocaleString()}</span>
+              <p className="text-[var(--secondary)]">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <form onSubmit={send} className="flex items-center gap-1.5">
+        <input value={body} onChange={e => setBody(e.target.value)} placeholder="Add a comment…"
+          className="flex-1 px-2.5 py-1.5 rounded-lg border border-[var(--divider)] text-[0.75rem] bg-[#f9f9f6] focus:outline-none focus:border-forest-400" />
+        <button type="submit" disabled={sending || !body.trim()}
+          className="p-1.5 text-white rounded-lg disabled:opacity-50" style={{ background: '#1a2e1c' }}>
+          <Send size={12} />
+        </button>
+      </form>
     </div>
   )
 }
