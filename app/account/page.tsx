@@ -17,10 +17,6 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const staffRole = await getMyStaffRole()
 
-  const links = staffRole
-    ? [{ icon: Store, label: 'Store Dashboard', sub: `Tasks, orders & more (${staffRole.role})`, href: '/bm-admin' }, ...quickLinks]
-    : quickLinks
-
   const [recentOrdersResult, orderCountResult, itemsResult] = user
     ? await Promise.all([
         supabase
@@ -113,9 +109,25 @@ export default async function AccountPage() {
 
         {/* Quick links */}
         <div>
+          {staffRole && (
+            <Link
+              href="/bm-admin"
+              className="flex items-center gap-3 p-4 rounded-2xl mb-4 group transition-transform hover:scale-[1.02]"
+              style={{ background: '#1a2e1c' }}
+            >
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Store size={19} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">Store Dashboard</p>
+                <p className="text-xs text-white/60 capitalize">{staffRole.role} access — Tasks, Orders & more</p>
+              </div>
+              <ChevronRight size={16} className="text-white/60 group-hover:text-white transition-colors" />
+            </Link>
+          )}
           <h2 className="font-display font-bold text-xl text-forest-900 mb-4">My Account</h2>
           <div className="space-y-2">
-            {links.map(({ icon: Icon, label, sub, href }) => (
+            {quickLinks.map(({ icon: Icon, label, sub, href }) => (
               <Link
                 key={label}
                 href={href}
