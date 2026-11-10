@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
-  LogOut, Plus, Trash2, Pencil, Check, X,
+  ArrowLeft, Plus, Trash2, Pencil, Check, X,
   ChevronUp, ChevronDown, Clock, UtensilsCrossed, ExternalLink,
   ListChecks, UserRound, Undo2, Receipt, RotateCcw,
   DollarSign, ShoppingBag, Hourglass, Users, UserPlus,
@@ -11,7 +11,6 @@ import {
 import { mapOrderRow, statusLabel, statusColor, itemCount } from '@/lib/orders'
 import type { Order, OrderStatus } from '@/lib/types'
 import type { StaffRole } from '@/lib/staff-roles'
-import { createClient } from '@/lib/supabase/client'
 
 // ─── types ───────────────────────────────────────────────────────────────
 const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
@@ -76,16 +75,8 @@ async function saveSettings(s: Settings) {
 
 // ─── root ────────────────────────────────────────────────────────────────
 export default function AdminDashboardClient({ me }: { me: StaffRole }) {
-  const router = useRouter()
   const [tab, setTab] = useState<'tasks' | 'deli' | 'hours' | 'orders' | 'team'>('tasks')
   const isAdmin = me.role === 'admin'
-
-  const logout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   // ── Dashboard ──
   return (
@@ -152,12 +143,12 @@ export default function AdminDashboardClient({ me }: { me: StaffRole }) {
                           text-[var(--secondary)] hover:bg-[#f5f5f7] transition-colors">
               <ExternalLink size={13} /> Board
             </a>
-            <button onClick={logout}
+            <Link href="/account"
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.8125rem]
                          text-[var(--secondary)] hover:bg-[#f5f5f7] transition-colors">
-              <LogOut size={14} />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+              <ArrowLeft size={14} />
+              <span className="hidden sm:inline">My Account</span>
+            </Link>
           </div>
         </div>
       </div>
